@@ -300,17 +300,6 @@ function renderIsotopeText(text) {
   return parts;
 }
 
-// Normalizes fullwidth Latin punctuation (，．) that sometimes appears after
-// round-tripping through spreadsheet apps back to standard Japanese
-// punctuation (、。) — but leaves them alone when used as a decimal point or
-// number separator (e.g. "2．5" stays as-is, not "2。5").
-function normalizePunctuation(str) {
-  if (!str) return str;
-  return str
-    .replace(/(?<![0-9０-９])．(?![0-9０-９])/g, "。")
-    .replace(/(?<![0-9０-９])，(?![0-9０-９])/g, "、");
-}
-
 function normalizeYear(raw) {
   if (!raw) return "";
   return raw.split(/[_\-\s]/)[0].trim();
@@ -477,7 +466,10 @@ function App() {
 
   async function importQuestions(newQuestions) {
     const idToIndex = new Map(data.questions.map((q, i) => [q.id, i]));
-    const signatureToIndex = new Map(data.questions.map((q, i) => [`${q.category || ""}||${q.text || ""}`, i]));
+    const yearToIndex = new Map();
+    data.questions.forEach((q, i) => {
+      if (q.year) yearToIndex.set(q.year, i);
+    });
     const stats = { ...data.stats };
     const questions = [...data.questions];
     const additions = [];
@@ -485,17 +477,16 @@ function App() {
 
     newQuestions.forEach((q) => {
       const importId = q._importId;
-      const signature = `${q.category || ""}||${q.text || ""}`;
       let matchIdx = importId && idToIndex.has(importId) ? idToIndex.get(importId) : undefined;
-      if (matchIdx === undefined && !importId && signatureToIndex.has(signature)) {
-        matchIdx = signatureToIndex.get(signature);
+      if (matchIdx === undefined && q.year && yearToIndex.has(q.year)) {
+        matchIdx = yearToIndex.get(q.year);
       }
       const { _importId, _correctCount, _wrongCount, ...content } = q;
 
       if (matchIdx !== undefined) {
-        // matches a question already on this device -> update its content
-        // (question text, choices, correct answer, explanation, ...) but
-        // leave its accumulated correct/wrong stats untouched.
+        // matches a question already on this device (same year_no, e.g.
+        // R3_01) -> update its content, but leave its accumulated
+        // correct/wrong stats untouched.
         const existingId = questions[matchIdx].id;
         questions[matchIdx] = { ...content, id: existingId };
         updated += 1;
@@ -508,7 +499,7 @@ function App() {
         questions.push(newQ);
         additions.push(newQ);
         idToIndex.set(id, questions.length - 1);
-        signatureToIndex.set(signature, questions.length - 1);
+        if (q.year) yearToIndex.set(q.year, questions.length - 1);
       }
     });
 
@@ -520,6 +511,48 @@ function App() {
   async function setQuestionAnswer(id, patch) {
     const questions = data.questions.map((q) => (q.id === id ? { ...q, ...patch } : q));
     await persist({ ...data, questions });
+  }
+
+  // Merges questions that ended up duplicated (same year_no, e.g. R3_01, or
+  // same category+text when no year_no is set), keeping one copy and summing
+  // their correct/wrong stats together.
+  async function dedupeQuestions() {
+    const groups = new Map(); // key -> array of questions
+    data.questions.forEach((q) => {
+      const key = q.year ? `year:${q.year}` : `sig:${q.category || ""}||${q.text || ""}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(q);
+    });
+
+    const keptQuestions = [];
+    const stats = { ...data.stats };
+    let removedCount = 0;
+
+    groups.forEach((group) => {
+      if (group.length === 1) {
+        keptQuestions.push(group[0]);
+        return;
+      }
+      // prefer a question that already has its correct answer set
+      const keeper = group.find((q) => isAnswerable(q)) || group[0];
+      let mergedCorrect = 0, mergedWrong = 0;
+      group.forEach((q) => {
+        const s = data.stats[q.id];
+        if (s) {
+          mergedCorrect += s.correct || 0;
+          mergedWrong += s.wrong || 0;
+        }
+        if (q.id !== keeper.id) delete stats[q.id];
+      });
+      if (mergedCorrect || mergedWrong) {
+        stats[keeper.id] = { correct: mergedCorrect, wrong: mergedWrong };
+      }
+      keptQuestions.push(keeper);
+      removedCount += group.length - 1;
+    });
+
+    await persist({ ...data, questions: keptQuestions, stats });
+    return removedCount;
   }
 
   // ---------- quiz flow ----------
@@ -712,7 +745,7 @@ function App() {
         {storageOk === false && (
           <div className="storage-warning">
             <AlertCircle size={14} />
-            <span>保存が有効になっていません。閉じると内容が消えるので、「問題管理」の「バックアップ用にCSVを書き出す」を使うか、外部保存(Googleスプレッドシート連携)を設定してください。</span>
+            <span>保存が有効になっていません。閉じると内容が消える可能性があるので、「問題管理」の「バックアップ用にCSVを書き出す」をこまめに使ってください。</span>
           </div>
         )}
 
@@ -735,6 +768,7 @@ function App() {
               onEdit={startEdit}
               onDelete={deleteQuestion}
               onSetAnswer={setQuestionAnswer}
+              onDedupe={dedupeQuestions}
               rateOf={rateOf}
             />
           )}
@@ -900,7 +934,7 @@ function Home({ data, overall, categories, onStartQuiz, onManage, onReviewWrong 
 }
 
 // ---------- Manage ----------
-function Manage({ data, onAdd, onImport, onEdit, onDelete, onSetAnswer, rateOf }) {
+function Manage({ data, onAdd, onImport, onEdit, onDelete, onSetAnswer, onDedupe, rateOf }) {
   const [confirmId, setConfirmId] = useState(null);
   const [settingId, setSettingId] = useState(null);
   const byCategory = {};
@@ -959,7 +993,18 @@ function Manage({ data, onAdd, onImport, onEdit, onDelete, onSetAnswer, rateOf }
       </div>
 
       {data.questions.length > 0 && (
-        <button className="btn btn-ghost btn-small" onClick={exportCsv}><Download size={14} /> バックアップ用にCSVを書き出す</button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-ghost btn-small" onClick={exportCsv}><Download size={14} /> バックアップ用にCSVを書き出す</button>
+          <button
+            className="btn btn-ghost btn-small"
+            onClick={async () => {
+              const removed = await onDedupe();
+              alert(removed > 0 ? `重複していた${removed}問を整理しました。` : "重複している問題はありませんでした。");
+            }}
+          >
+            重複を整理する
+          </button>
+        </div>
       )}
 
       {unsetCount > 0 && (
@@ -1099,14 +1144,14 @@ function Import({ onCancel, onImport }) {
     }
     const questions = [];
     for (const row of res.data) {
-      const text = normalizePunctuation((row.text || row["問題文"] || row.question || row["問題"] || row["設問"] || "").trim());
+      const text = (row.text || row["問題文"] || row.question || row["問題"] || row["設問"] || "").trim();
       if (!text) continue;
       const category = (row.category || row["カテゴリ"] || "未分類").trim() || "未分類";
       const year = (row.year_no || row.year || row["年度"] || row["年"] || "").trim();
       const choices = [1, 2, 3, 4, 5, 6]
-        .map((i) => normalizePunctuation((row[`choice${i}`] || "").trim()))
+        .map((i) => (row[`choice${i}`] || "").trim())
         .filter((c) => c.length > 0);
-      const explanation = normalizePunctuation((row.explanation || row["解説"] || "").trim());
+      const explanation = (row.explanation || row["解説"] || "").trim();
       const multiFlagRaw = String(row.multi || row["複数"] || row["複数選択"] || "").trim();
       const isMultiFlag = multiFlagRaw === "1" || multiFlagRaw === "true" || multiFlagRaw === "○" || multiFlagRaw === "はい";
       const correctRaw = String(row.correct || row["正解"] || row["解答"] || row.answer || "").trim();
@@ -1121,7 +1166,7 @@ function Import({ onCancel, onImport }) {
         const correctIndices = multi ? indices : [];
         questions.push({ category, year, text, type: "choice", choices, multi, correctIndex, correctIndices, explanation, _importId: importId, _correctCount: correctCount, _wrongCount: wrongCount });
       } else if (correctRaw) {
-        questions.push({ category, year, text, type: "text", correctText: normalizePunctuation(correctRaw), explanation, _importId: importId, _correctCount: correctCount, _wrongCount: wrongCount });
+        questions.push({ category, year, text, type: "text", correctText: correctRaw, explanation, _importId: importId, _correctCount: correctCount, _wrongCount: wrongCount });
       }
     }
     if (questions.length === 0) {
@@ -1259,9 +1304,9 @@ function QuestionForm({ categories, years, existing, onCancel, onSave }) {
   function handleSave() {
     if (!text.trim()) { setError("問題文を入力してください"); return; }
     const yearVal = year.trim();
-    const cleanText = normalizePunctuation(text.trim());
-    const cleanChoices = choices.map((c) => normalizePunctuation(c.trim()));
-    const cleanExplanation = normalizePunctuation(explanation.trim());
+    const cleanText = text.trim();
+    const cleanChoices = choices.map((c) => c.trim());
+    const cleanExplanation = explanation.trim();
     if (type === "choice") {
       if (cleanChoices.some((c) => !c)) { setError("すべての選択肢を入力してください"); return; }
       if (multi) {
@@ -1270,7 +1315,7 @@ function QuestionForm({ categories, years, existing, onCancel, onSave }) {
         onSave({ category: category.trim() || "未分類", year: yearVal, text: cleanText, type, choices: cleanChoices, multi: false, correctIndex, correctIndices: [], explanation: cleanExplanation, image });
       }
     } else {
-      onSave({ category: category.trim() || "未分類", year: yearVal, text: cleanText, type, correctText: normalizePunctuation(correctText.trim()), explanation: cleanExplanation, image });
+      onSave({ category: category.trim() || "未分類", year: yearVal, text: cleanText, type, correctText: correctText.trim(), explanation: cleanExplanation, image });
     }
   }
 

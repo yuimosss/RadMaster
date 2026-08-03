@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Rad Master" />
+<title>Rad Master</title>
+<link rel="icon" href="data:,">
+<style>
+  html { background: #0A1016; }
+  html, body {
+    margin: 0; padding: 0; background: #0A1016;
+    width: 100%; height: 100%;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  #root { min-height: 100vh; min-height: 100dvh; }
+  #boot-status {
+    color: #E88178; background: #0A1016; padding: 20px;
+    font-family: monospace; white-space: pre-wrap; font-size: 13px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div id="root"><div id="boot-status">読み込み中…</div></div>
+<script>
+  window.__cdnErrors = [];
+  function __cdnFail(name) {
+    return function () {
+      window.__cdnErrors.push(name);
+      var el = document.getElementById("boot-status");
+      if (el) {
+        el.textContent =
+          "外部ライブラリの読み込みに失敗しました: " + window.__cdnErrors.join(", ") +
+          "\n\nネットワーク状況を確認して、ページを再読み込みしてください。";
+      }
+    };
+  }
+</script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" onerror="__cdnFail('React')()"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" onerror="__cdnFail('ReactDOM')()"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js" onerror="__cdnFail('Babel')()"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" onerror="__cdnFail('PapaParse')()"></script>
+<script type="text/plain" id="app-source">
+// ---------- minimal inline icon set (replaces lucide-react for the standalone build) ----------
+function IconBase({ size = 16, className, color, children }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={color ? { color } : undefined}
+    >
+      {children}
+    </svg>
+  );
+}
+
+function Plus({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </IconBase>
+  );
+}
+
+function X({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </IconBase>
+  );
+}
+
+function Check({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <polyline points="20 6 9 17 4 12" />
+    </IconBase>
+  );
+}
+
+function Pencil({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </IconBase>
+  );
+}
+
+function Trash2({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </IconBase>
+  );
+}
+
+function ChevronLeft({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <polyline points="15 18 9 12 15 6" />
+    </IconBase>
+  );
+}
+
+function ChevronRight({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <polyline points="9 18 15 12 9 6" />
+    </IconBase>
+  );
+}
+
+function BookOpen({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <path d="M2 5.5C2 4.7 2.7 4 3.5 4H10a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5H2Z" />
+      <path d="M22 5.5c0-.8-.7-1.5-1.5-1.5H14a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5H22Z" />
+    </IconBase>
+  );
+}
+
+function ListChecks({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <polyline points="3 7 5 9 9 5" />
+      <line x1="12" y1="7" x2="21" y2="7" />
+      <polyline points="3 15 5 17 9 13" />
+      <line x1="12" y1="15" x2="21" y2="15" />
+    </IconBase>
+  );
+}
+
+function BarChart3({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <line x1="4" y1="20" x2="4" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="20" y1="20" x2="20" y2="14" />
+    </IconBase>
+  );
+}
+
+function Loader2({ size, className, color }) {
+  return (
+    <IconBase size={size} className={className} color={color}>
+      <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+    </IconBase>
+  );
+}
+
+function Upload({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <path d="M12 19V6" />
+      <polyline points="6 11 12 5 18 11" />
+      <path d="M5 19h14" />
+    </IconBase>
+  );
+}
+
+function Download({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <path d="M12 5v13" />
+      <polyline points="6 13 12 19 18 13" />
+      <path d="M5 19h14" />
+    </IconBase>
+  );
+}
+
+function AlertCircle({ size, className }) {
+  return (
+    <IconBase size={size} className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="8" x2="12" y2="13" />
+      <line x1="12" y1="16.5" x2="12" y2="16.5" />
+    </IconBase>
+  );
+}
+
+const { useState, useEffect, useRef, useMemo } = React;
+
+// ---------- storage helpers ----------
+const STORAGE_KEY = "mondaichou-data";
+const PROBE_KEY = "mondaichou-storage-probe";
+const SESSION_KEY = "mondaichou-quiz-session";
+
+// A quiz-in-progress is saved separately (and synchronously) from the main
+// question/stats data so it can resume exactly where it left off, even after
+// fully closing the app.
+function saveSession(session) {
+  try {
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch (e) {
+    // best effort only
+  }
+}
+
+function loadSession() {
+  try {
+    const raw = window.localStorage.getItem(SESSION_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    // ignore
+  }
+  return null;
+}
+
+function clearSession() {
+  try {
+    window.localStorage.removeItem(SESSION_KEY);
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function loadData() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    // key not found or error -> fresh start
+  }
+  return { questions: [], stats: {} };
+}
+
+async function saveData(data) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Confirms this browser's persistent storage actually round-trips data.
+async function testStorageRoundTrip() {
+  const token = String(Date.now());
+  try {
+    window.localStorage.setItem(PROBE_KEY, token);
+    const value = window.localStorage.getItem(PROBE_KEY);
+    if (value === token) return { ok: true, error: null };
+    return { ok: false, error: "保存内容の読み戻しに失敗しました" };
+  } catch (e) {
+    return { ok: false, error: (e && e.message) || String(e) };
+  }
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// a question is "answerable" (usable in a quiz) once its correct answer is set
+function isAnswerable(q) {
+  if (q.type === "text") return !!(q.correctText && q.correctText.trim());
+  if (q.multi) return Array.isArray(q.correctIndices) && q.correctIndices.length > 0;
+  return q.correctIndex !== null && q.correctIndex !== undefined;
+}
+
+// Extracts just the year label from values like "R3_01" or "R3-05" -> "R3".
+// Falls back to the original (trimmed) value if no separator is found.
+// Renders text containing isotope notation like "125-I" or "60-Co" with the
+// mass number as a small superscript before the element symbol (125I).
+function renderIsotopeText(text) {
+  if (!text) return text;
+  const regex = /(\d+)-([A-Za-z]+)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    parts.push(
+      <React.Fragment key={key++}>
+        <sup className="isotope-sup">{match[1]}</sup>
+        {match[2]}
+      </React.Fragment>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (parts.length === 0) return text;
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
+}
+
+// Normalizes fullwidth Latin punctuation (，．) that sometimes appears after
+// round-tripping through spreadsheet apps back to standard Japanese
+// punctuation (、。) — but leaves them alone when used as a decimal point or
+// number separator (e.g. "2．5" stays as-is, not "2。5").
+function normalizePunctuation(str) {
+  if (!str) return str;
+  return str
+    .replace(/(?<![0-9０-９])．(?![0-9０-９])/g, "。")
+    .replace(/(?<![0-9０-９])，(?![0-9０-９])/g, "、");
+}
+
+function normalizeYear(raw) {
+  if (!raw) return "";
+  return raw.split(/[_\-\s]/)[0].trim();
+}
+
+const CIRCLED_MAP = { "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10 };
+
+// Parses a "correct answer" cell from an imported CSV into 0-based choice indices.
+// Accepts: plain numbers ("3"), fullwidth numbers, circled numbers ("①④"),
+// several answers separated by commas/、/・/whitespace, or the answer's own text.
+function parseAnswerTokens(raw, choices) {
+  if (!raw) return [];
+  const normalized = raw.replace(/[\uFF10-\uFF19]/g, (d) =>
+    String.fromCharCode(d.charCodeAt(0) - 0xFF10 + 0x30)
+  );
+  const tokens = normalized.split(/[,、・\/\s]+/).map((t) => t.trim()).filter(Boolean);
+  const indices = [];
+  for (const token of tokens) {
+    if (CIRCLED_MAP[token]) {
+      indices.push(CIRCLED_MAP[token] - 1);
+      continue;
+    }
+    // a token like "①④" glued together without a separator
+    if ([...token].every((ch) => CIRCLED_MAP[ch])) {
+      for (const ch of token) indices.push(CIRCLED_MAP[ch] - 1);
+      continue;
+    }
+    if (/^\d+$/.test(token)) {
+      indices.push(parseInt(token, 10) - 1);
+      continue;
+    }
+    const byText = choices.findIndex((c) => c.trim() === token);
+    if (byText >= 0) { indices.push(byText); continue; }
+  }
+  return [...new Set(indices)].filter((i) => i >= 0 && i < choices.length);
+}
+
+// ---------- hanko stamp component ----------
+function Hanko({ result, show }) {
+  if (!show) return null;
+  if (result === "correct") {
+    return (
+      <div className="hanko-wrap">
+        <div className="hanko-stamp">
+          <svg viewBox="0 0 100 100" width="86" height="86">
+            <circle cx="50" cy="50" r="44" fill="none" stroke="#4FA8C9" strokeWidth="5" />
+            <text x="50" y="62" textAnchor="middle" fontSize="42" fontFamily="'JetBrains Mono', monospace" fill="#4FA8C9">正</text>
+          </svg>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="hanko-wrap">
+      <svg viewBox="0 0 100 100" width="72" height="72" className="pencil-x">
+        <line x1="22" y1="22" x2="78" y2="78" stroke="#8A97A6" strokeWidth="6" strokeLinecap="round" />
+        <line x1="78" y1="22" x2="22" y2="78" stroke="#8A97A6" strokeWidth="6" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+function App() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({ questions: [], stats: {} });
+  const [view, setView] = useState("home"); // home | manage | add | quizsetup | quiz | result
+  const [editingId, setEditingId] = useState(null);
+  const [storageOk, setStorageOk] = useState(null); // null=checking, true=working, false=not persisting
+  const [storageError, setStorageError] = useState(null);
+  const [saveFailed, setSaveFailed] = useState(false);
+
+  const [quizQueue, setQuizQueue] = useState([]);
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState([]); // {id, correct}
+  const [selectedChoice, setSelectedChoice] = useState(null);
+  const [selectedChoices, setSelectedChoices] = useState([]); // for multi-select questions
+  const [textAnswer, setTextAnswer] = useState("");
+  const [answered, setAnswered] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const d = await loadData();
+      setData(d);
+      setLoading(false);
+      const result = await testStorageRoundTrip();
+      setStorageOk(result.ok);
+      setStorageError(result.error);
+
+      const session = loadSession();
+      if (session && Array.isArray(session.queueIds) && session.queueIds.length > 0) {
+        const restoredQueue = session.queueIds
+          .map((id) => d.questions.find((q) => q.id === id))
+          .filter(Boolean);
+        if (restoredQueue.length === session.queueIds.length && session.idx < restoredQueue.length) {
+          setQuizQueue(restoredQueue);
+          setQuizIdx(session.idx);
+          setQuizAnswers(session.answers || []);
+          setSelectedChoice(session.selectedChoice ?? null);
+          setSelectedChoices(session.selectedChoices || []);
+          setTextAnswer(session.textAnswer || "");
+          setAnswered(!!session.answered);
+          setLastResult(session.lastResult || null);
+          setView("quiz");
+        } else {
+          clearSession();
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function persist(next) {
+    setData(next);
+    const ok = await saveData(next);
+    setSaveFailed(!ok);
+    setStorageOk(ok);
+  }
+
+  const categories = useMemo(() => {
+    const set = new Set(data.questions.map((q) => q.category || "未分類"));
+    return Array.from(set);
+  }, [data.questions]);
+
+  const years = useMemo(() => {
+    const set = new Set(data.questions.filter((q) => q.year).map((q) => normalizeYear(q.year)));
+    return Array.from(set).sort();
+  }, [data.questions]);
+
+  const overall = useMemo(() => {
+    let c = 0, w = 0;
+    Object.values(data.stats).forEach((s) => {
+      c += s.correct || 0;
+      w += s.wrong || 0;
+    });
+    return { c, w, total: c + w, rate: c + w > 0 ? Math.round((c / (c + w)) * 100) : null };
+  }, [data.stats]);
+
+  // ---------- CRUD ----------
+  function startAdd() {
+    setEditingId(null);
+    setView("add");
+  }
+  function startEdit(id) {
+    setEditingId(id);
+    setView("add");
+  }
+  async function deleteQuestion(id) {
+    const questions = data.questions.filter((q) => q.id !== id);
+    const stats = { ...data.stats };
+    delete stats[id];
+    await persist({ questions, stats });
+  }
+  async function saveQuestion(q) {
+    let questions;
+    if (editingId) {
+      questions = data.questions.map((x) => (x.id === editingId ? { ...q, id: editingId } : x));
+    } else {
+      questions = [...data.questions, { ...q, id: uid() }];
+    }
+    await persist({ ...data, questions });
+    setView("manage");
+  }
+
+  async function importQuestions(newQuestions) {
+    const idToIndex = new Map(data.questions.map((q, i) => [q.id, i]));
+    const signatureToIndex = new Map(data.questions.map((q, i) => [`${q.category || ""}||${q.text || ""}`, i]));
+    const stats = { ...data.stats };
+    const questions = [...data.questions];
+    const additions = [];
+    let updated = 0;
+
+    newQuestions.forEach((q) => {
+      const importId = q._importId;
+      const signature = `${q.category || ""}||${q.text || ""}`;
+      let matchIdx = importId && idToIndex.has(importId) ? idToIndex.get(importId) : undefined;
+      if (matchIdx === undefined && !importId && signatureToIndex.has(signature)) {
+        matchIdx = signatureToIndex.get(signature);
+      }
+      const { _importId, _correctCount, _wrongCount, ...content } = q;
+
+      if (matchIdx !== undefined) {
+        // matches a question already on this device -> update its content
+        // (question text, choices, correct answer, explanation, ...) but
+        // leave its accumulated correct/wrong stats untouched.
+        const existingId = questions[matchIdx].id;
+        questions[matchIdx] = { ...content, id: existingId };
+        updated += 1;
+      } else {
+        const id = importId || uid();
+        if (_correctCount || _wrongCount) {
+          stats[id] = { correct: _correctCount || 0, wrong: _wrongCount || 0 };
+        }
+        const newQ = { ...content, id };
+        questions.push(newQ);
+        additions.push(newQ);
+        idToIndex.set(id, questions.length - 1);
+        signatureToIndex.set(signature, questions.length - 1);
+      }
+    });
+
+    await persist({ ...data, questions, stats });
+    setView("manage");
+    return { added: additions.length, updated };
+  }
+
+  async function setQuestionAnswer(id, patch) {
+    const questions = data.questions.map((q) => (q.id === id ? { ...q, ...patch } : q));
+    await persist({ ...data, questions });
+  }
+
+  // ---------- quiz flow ----------
+  function beginQuiz({ category, year, count, weakFirst }) {
+    let pool = data.questions.filter(
+      (q) =>
+        (category === "all" || (q.category || "未分類") === category) &&
+        (year === "all" || normalizeYear(q.year || "") === year) &&
+        isAnswerable(q)
+    );
+    if (weakFirst) {
+      pool = [...pool].sort((a, b) => {
+        const ra = rateOf(a.id), rb = rateOf(b.id);
+        return ra - rb;
+      });
+    } else {
+      pool = [...pool].sort(() => Math.random() - 0.5);
+    }
+    pool = pool.slice(0, count);
+    setQuizQueue(pool);
+    setQuizIdx(0);
+    setQuizAnswers([]);
+    setSelectedChoice(null);
+    setSelectedChoices([]);
+    setTextAnswer("");
+    setAnswered(false);
+    setLastResult(null);
+    setView("quiz");
+    saveSession({
+      queueIds: pool.map((q) => q.id),
+      idx: 0,
+      answers: [],
+      selectedChoice: null,
+      selectedChoices: [],
+      textAnswer: "",
+      answered: false,
+      lastResult: null,
+    });
+  }
+
+  function beginQuizWithIds(ids) {
+    const pool = data.questions.filter((q) => ids.includes(q.id) && isAnswerable(q));
+    if (pool.length === 0) return;
+    setQuizQueue(pool);
+    setQuizIdx(0);
+    setQuizAnswers([]);
+    setSelectedChoice(null);
+    setSelectedChoices([]);
+    setTextAnswer("");
+    setAnswered(false);
+    setLastResult(null);
+    setView("quiz");
+    saveSession({
+      queueIds: pool.map((q) => q.id),
+      idx: 0,
+      answers: [],
+      selectedChoice: null,
+      selectedChoices: [],
+      textAnswer: "",
+      answered: false,
+      lastResult: null,
+    });
+  }
+
+  function rateOf(id) {
+    const s = data.stats[id];
+    if (!s || s.correct + s.wrong === 0) return -1; // unanswered -> prioritize
+    return s.correct / (s.correct + s.wrong);
+  }
+
+  async function submitAnswer() {
+    const q = quizQueue[quizIdx];
+    let correct = false;
+    if (q.type === "choice" && q.multi) {
+      const a = [...selectedChoices].sort().join(",");
+      const b = [...q.correctIndices].sort().join(",");
+      correct = a.length > 0 && a === b;
+    } else if (q.type === "choice") {
+      correct = selectedChoice === q.correctIndex;
+    } else {
+      correct = textAnswer.trim().length > 0 && textAnswer.trim() === q.correctText.trim();
+    }
+    const result = correct ? "correct" : "wrong";
+    setLastResult(result);
+    setAnswered(true);
+
+    const stats = { ...data.stats };
+    const cur = stats[q.id] || { correct: 0, wrong: 0 };
+    stats[q.id] = correct ? { ...cur, correct: cur.correct + 1 } : { ...cur, wrong: cur.wrong + 1 };
+    await persist({ ...data, stats });
+    const newAnswers = [...quizAnswers, { id: q.id, correct }];
+    setQuizAnswers(newAnswers);
+    saveSession({
+      queueIds: quizQueue.map((qq) => qq.id),
+      idx: quizIdx,
+      answers: newAnswers,
+      selectedChoice,
+      selectedChoices,
+      textAnswer,
+      answered: true,
+      lastResult: result,
+    });
+  }
+
+  function nextQuestion() {
+    if (quizIdx + 1 >= quizQueue.length) {
+      clearSession();
+      setView("result");
+      return;
+    }
+    const newIdx = quizIdx + 1;
+    setQuizIdx(newIdx);
+    setSelectedChoice(null);
+    setSelectedChoices([]);
+    setTextAnswer("");
+    setAnswered(false);
+    setLastResult(null);
+    saveSession({
+      queueIds: quizQueue.map((qq) => qq.id),
+      idx: newIdx,
+      answers: quizAnswers,
+      selectedChoice: null,
+      selectedChoices: [],
+      textAnswer: "",
+      answered: false,
+      lastResult: null,
+    });
+  }
+
+  function retryWrong() {
+    const wrongIds = new Set(quizAnswers.filter((a) => !a.correct).map((a) => a.id));
+    const pool = data.questions.filter((q) => wrongIds.has(q.id));
+    setQuizQueue(pool);
+    setQuizIdx(0);
+    setQuizAnswers([]);
+    setSelectedChoice(null);
+    setSelectedChoices([]);
+    setTextAnswer("");
+    setAnswered(false);
+    setLastResult(null);
+    setView("quiz");
+    saveSession({
+      queueIds: pool.map((q) => q.id),
+      idx: 0,
+      answers: [],
+      selectedChoice: null,
+      selectedChoices: [],
+      textAnswer: "",
+      answered: false,
+      lastResult: null,
+    });
+  }
+
+  if (loading) {
+    return (
+      <div className="app-root center-screen">
+        <GlobalStyle />
+        <Loader2 className="animate-spin" size={28} color="#4FA8C9" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-root">
+      <GlobalStyle />
+      <div className="paper">
+        <header className="topbar">
+          <div className="brand">
+            <span className="brand-mark">
+              <svg viewBox="0 0 40 40" width="22" height="22" fill="none">
+                {[0, 60, 120, 180, 240, 300].map((deg) => {
+                  const rad = (deg * Math.PI) / 180;
+                  const x1 = 20 + 17 * Math.cos(rad);
+                  const y1 = 20 + 17 * Math.sin(rad);
+                  const x2 = 20 + 7 * Math.cos(rad);
+                  const y2 = 20 + 7 * Math.sin(rad);
+                  return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} stroke="currentColor" strokeWidth="2" strokeLinecap="round" />;
+                })}
+                <circle cx="20" cy="20" r="4.5" fill="currentColor" />
+                <circle cx="20" cy="20" r="17" stroke="currentColor" strokeWidth="1.2" opacity="0.4" />
+              </svg>
+            </span>
+            <div className="brand-text">
+              <div className="brand-title">Rad Master</div>
+              <div className="brand-sub">放射線治療専門試験対策</div>
+            </div>
+          </div>
+        </header>
+
+        {storageOk === false && (
+          <div className="storage-warning">
+            <AlertCircle size={14} />
+            <span>保存が有効になっていません。閉じると内容が消えるので、「問題管理」の「バックアップ用にCSVを書き出す」を使うか、外部保存(Googleスプレッドシート連携)を設定してください。</span>
+          </div>
+        )}
+
+        <main className="main">
+          {view === "home" && (
+            <Home
+              data={data}
+              overall={overall}
+              categories={categories}
+              onStartQuiz={() => setView("quizsetup")}
+              onManage={() => setView("manage")}
+              onReviewWrong={beginQuizWithIds}
+            />
+          )}
+          {view === "manage" && (
+            <Manage
+              data={data}
+              onAdd={startAdd}
+              onImport={() => setView("import")}
+              onEdit={startEdit}
+              onDelete={deleteQuestion}
+              onSetAnswer={setQuestionAnswer}
+              rateOf={rateOf}
+            />
+          )}
+          {view === "add" && (
+            <QuestionForm
+              categories={categories}
+              years={years}
+              existing={editingId ? data.questions.find((q) => q.id === editingId) : null}
+              onCancel={() => setView("manage")}
+              onSave={saveQuestion}
+            />
+          )}
+          {view === "import" && (
+            <Import
+              onCancel={() => setView("manage")}
+              onImport={importQuestions}
+            />
+          )}
+          {view === "quizsetup" && (
+            <QuizSetup
+              categories={categories}
+              years={years}
+              questions={data.questions}
+              onCancel={() => setView("home")}
+              onBegin={beginQuiz}
+            />
+          )}
+          {view === "quiz" && quizQueue.length > 0 && (
+            <Quiz
+              q={quizQueue[quizIdx]}
+              idx={quizIdx}
+              total={quizQueue.length}
+              answered={answered}
+              lastResult={lastResult}
+              selectedChoice={selectedChoice}
+              setSelectedChoice={setSelectedChoice}
+              selectedChoices={selectedChoices}
+              setSelectedChoices={setSelectedChoices}
+              textAnswer={textAnswer}
+              setTextAnswer={setTextAnswer}
+              onSubmit={submitAnswer}
+              onNext={nextQuestion}
+            />
+          )}
+          {view === "result" && (
+            <Result
+              answers={quizAnswers}
+              questions={data.questions}
+              onHome={() => setView("home")}
+              onRetryWrong={retryWrong}
+            />
+          )}
+        </main>
+
+        <nav className="bottomnav">
+          <NavBtn active={view === "home"} icon={<BarChart3 size={20} />} label="ホーム" onClick={() => setView("home")} />
+          <NavBtn
+            active={view === "quizsetup" || view === "quiz" || view === "result"}
+            icon={<BookOpen size={20} />}
+            label="演習"
+            onClick={() => setView(quizQueue.length > 0 && quizAnswers.length < quizQueue.length ? "quiz" : "quizsetup")}
+          />
+          <NavBtn active={view === "manage" || view === "add" || view === "import"} icon={<ListChecks size={20} />} label="問題管理" onClick={() => setView("manage")} />
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+function NavBtn({ active, icon, label, onClick }) {
+  return (
+    <button className={"navbtn" + (active ? " navbtn-active" : "")} onClick={onClick}>
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+// ---------- Home ----------
+function Home({ data, overall, categories, onStartQuiz, onManage, onReviewWrong }) {
+  const catStats = categories.map((cat) => {
+    const qs = data.questions.filter((q) => (q.category || "未分類") === cat);
+    let c = 0, w = 0;
+    qs.forEach((q) => {
+      const s = data.stats[q.id];
+      if (s) { c += s.correct || 0; w += s.wrong || 0; }
+    });
+    return { cat, count: qs.length, rate: c + w > 0 ? Math.round((c / (c + w)) * 100) : null };
+  });
+
+  const wrongQuestions = data.questions
+    .map((q) => {
+      const s = data.stats[q.id];
+      if (!s || !s.wrong) return null;
+      const total = (s.correct || 0) + s.wrong;
+      return { q, wrong: s.wrong, rate: Math.round(((s.correct || 0) / total) * 100) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.rate - b.rate || b.wrong - a.wrong);
+
+  return (
+    <div className="stack">
+      <section className="card hero-card">
+        <div className="hero-label">正答率</div>
+        <div className="hero-number">{overall.rate === null ? "―" : `${overall.rate}%`}</div>
+        <div className="hero-sub">{overall.total > 0 ? `${overall.total}問 解答済み（正解 ${overall.c} ／ 不正解 ${overall.w}）` : "まだ演習していません"}</div>
+        {data.questions.length === 0 ? (
+          <button className="btn btn-primary" onClick={onManage}><Plus size={16} /> 問題を追加する</button>
+        ) : (
+          <button className="btn btn-primary" onClick={onStartQuiz}><BookOpen size={16} /> 演習を始める</button>
+        )}
+      </section>
+
+      {catStats.length > 0 && (
+        <section className="card">
+          <div className="section-title">分野別の正答率</div>
+          <div className="cat-list">
+            {catStats.map((cs) => (
+              <div key={cs.cat} className="cat-row">
+                <div className="cat-name">{cs.cat}</div>
+                <div className="cat-bar-track">
+                  <div className="cat-bar-fill" style={{ width: `${cs.rate === null ? 0 : cs.rate}%` }} />
+                </div>
+                <div className="cat-rate mono">{cs.rate === null ? "―" : `${cs.rate}%`}</div>
+                <div className="cat-count mono">{cs.count}問</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {wrongQuestions.length > 0 && (
+        <section className="card">
+          <div className="row-between">
+            <div className="section-title">間違えたことがある問題</div>
+            <button
+              className="btn btn-ghost btn-small"
+              onClick={() => onReviewWrong(wrongQuestions.map((w) => w.q.id))}
+            >
+              まとめて復習
+            </button>
+          </div>
+          <ul className="qlist">
+            {wrongQuestions.slice(0, 10).map(({ q, rate, wrong }) => (
+              <li key={q.id} className="qrow">
+                <div className="qrow-main">
+                  <div className="qrow-text">{renderIsotopeText(q.text)}</div>
+                  <div className="qrow-meta mono muted">{q.category} ・正答率 {rate}%（誤答 {wrong}回）</div>
+                </div>
+                <button className="btn btn-ghost btn-small" onClick={() => onReviewWrong([q.id])}>復習</button>
+              </li>
+            ))}
+          </ul>
+          {wrongQuestions.length > 10 && (
+            <div className="qrow-meta mono muted">他 {wrongQuestions.length - 10}問…</div>
+          )}
+        </section>
+      )}
+
+      <div className="empty-hint">全 {data.questions.length} 問を登録中</div>
+    </div>
+  );
+}
+
+// ---------- Manage ----------
+function Manage({ data, onAdd, onImport, onEdit, onDelete, onSetAnswer, rateOf }) {
+  const [confirmId, setConfirmId] = useState(null);
+  const [settingId, setSettingId] = useState(null);
+  const byCategory = {};
+  data.questions.forEach((q) => {
+    const cat = q.category || "未分類";
+    byCategory[cat] = byCategory[cat] || [];
+    byCategory[cat].push(q);
+  });
+  const unsetCount = data.questions.filter((q) => !isAnswerable(q)).length;
+
+  function exportCsv() {
+    const fields = ["id", "category", "text", "choice1", "choice2", "choice3", "choice4", "choice5", "choice6", "multi", "correct", "year_no", "explanation", "correct_count", "wrong_count"];
+    const rows = data.questions.map((q) => {
+      const s = data.stats[q.id] || {};
+      const row = {
+        id: q.id,
+        category: q.category || "",
+        text: q.text || "",
+        multi: q.multi ? "1" : "",
+        year_no: q.year || "",
+        explanation: q.explanation || "",
+        correct_count: s.correct || 0,
+        wrong_count: s.wrong || 0,
+      };
+      for (let i = 0; i < 6; i++) row[`choice${i + 1}`] = q.choices?.[i] || "";
+      if (q.type === "text") {
+        row.correct = q.correctText || "";
+      } else if (q.multi) {
+        row.correct = (q.correctIndices || []).map((i) => i + 1).join(",");
+      } else {
+        row.correct = q.correctIndex !== null && q.correctIndex !== undefined ? String(q.correctIndex + 1) : "";
+      }
+      return row;
+    });
+    const csv = Papa.unparse({ fields, data: rows });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `studioq_backup_${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="stack">
+      <div className="row-between">
+        <div className="section-title">問題一覧</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-small btn-ghost" onClick={onImport}><Upload size={14} /> インポート</button>
+          <button className="btn btn-small btn-primary" onClick={onAdd}><Plus size={15} /> 追加</button>
+        </div>
+      </div>
+
+      {data.questions.length > 0 && (
+        <button className="btn btn-ghost btn-small" onClick={exportCsv}><Download size={14} /> バックアップ用にCSVを書き出す</button>
+      )}
+
+      {unsetCount > 0 && (
+        <div className="notice-banner">
+          <AlertCircle size={15} />
+          正解が未設定の問題が {unsetCount} 問あります。演習には出題されません。各問題の「正解を選ぶ」から設定できます。
+        </div>
+      )}
+
+      {data.questions.length === 0 && (
+        <div className="card empty-card">
+          <div className="empty-title">まだ問題がありません</div>
+          <div className="empty-body">「追加」から最初の問題を登録するか、CSVをインポートしてください。</div>
+        </div>
+      )}
+
+      {Object.entries(byCategory).map(([cat, qs]) => (
+        <section key={cat} className="card">
+          <div className="section-subtitle">{cat}<span className="mono muted"> ・{qs.length}問</span></div>
+          <ul className="qlist">
+            {qs.map((q) => {
+              const r = rateOf(q.id);
+              const unset = !isAnswerable(q);
+              return (
+                <li key={q.id} className="qrow qrow-col">
+                  <div className="qrow-top">
+                    <div className="qrow-main">
+                      <div className="qrow-text">{renderIsotopeText(q.text)}</div>
+                      <div className="qrow-meta mono muted">
+                        {q.type === "choice" ? (q.multi ? "選択式(複数)" : "選択式") : "記述式"}
+                        {q.year ? ` ♯${q.year}` : ""}
+                        {q.image ? " ・画像あり" : ""}
+                        {unset ? "" : r >= 0 ? ` ・正答率 ${Math.round(r * 100)}%` : ""}
+                        {unset && <span className="badge-unset"> ・正解未設定</span>}
+                      </div>
+                    </div>
+                    <div className="qrow-actions">
+                      <button className="iconbtn" onClick={() => onEdit(q.id)}><Pencil size={15} /></button>
+                      {confirmId === q.id ? (
+                        <button className="iconbtn iconbtn-danger" onClick={() => { onDelete(q.id); setConfirmId(null); }}><Check size={15} /></button>
+                      ) : (
+                        <button className="iconbtn" onClick={() => setConfirmId(q.id)}><Trash2 size={15} /></button>
+                      )}
+                    </div>
+                  </div>
+                  {unset && q.type === "choice" && (
+                    settingId === q.id ? (
+                      <QuickAnswerPicker
+                        q={q}
+                        onDone={(patch) => { onSetAnswer(q.id, patch); setSettingId(null); }}
+                        onCancel={() => setSettingId(null)}
+                      />
+                    ) : (
+                      <button className="btn btn-ghost btn-small" onClick={() => setSettingId(q.id)}>正解を選ぶ</button>
+                    )
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// quick inline picker for setting the correct answer(s) of an imported question
+function QuickAnswerPicker({ q, onDone, onCancel }) {
+  const [multi, setMulti] = useState(!!q.multi);
+  const [single, setSingle] = useState(null);
+  const [multiSet, setMultiSet] = useState([]);
+
+  function toggleMulti(i) {
+    setMultiSet((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
+  }
+
+  function save() {
+    if (multi) {
+      if (multiSet.length === 0) return;
+      onDone({ multi: true, correctIndices: multiSet, correctIndex: null });
+    } else {
+      if (single === null) return;
+      onDone({ multi: false, correctIndex: single, correctIndices: [] });
+    }
+  }
+
+  return (
+    <div className="quickpick">
+      <label className="checkbox-row">
+        <input type="checkbox" checked={multi} onChange={(e) => { setMulti(e.target.checked); setSingle(null); setMultiSet([]); }} />
+        <span>複数選択の問題</span>
+      </label>
+      <div className="choices-list">
+        {q.choices.map((c, i) => {
+          const active = multi ? multiSet.includes(i) : single === i;
+          return (
+            <button
+              key={i}
+              className={"choice-btn" + (active ? " choice-selected" : "")}
+              onClick={() => (multi ? toggleMulti(i) : setSingle(i))}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+      <div className="form-actions">
+        <button className="btn btn-ghost btn-small" onClick={onCancel}>キャンセル</button>
+        <button className="btn btn-primary btn-small" onClick={save}>設定する</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Import ----------
+function Import({ onCancel, onImport }) {
+  const [raw, setRaw] = useState("");
+  const [parsed, setParsed] = useState(null);
+  const [error, setError] = useState("");
+  const fileRef = useRef(null);
+
+  function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setRaw(ev.target.result);
+    reader.readAsText(file, "utf-8");
+  }
+
+  function runParse() {
+    setError("");
+    if (!raw.trim()) { setError("CSVの内容を貼り付けるか、ファイルを選択してください"); return; }
+    const res = Papa.parse(raw.trim(), { header: true, skipEmptyLines: true });
+    if (res.errors && res.errors.length > 0) {
+      setError("CSVの解析でエラーが発生しました。形式を確認してください。");
+      return;
+    }
+    const questions = [];
+    for (const row of res.data) {
+      const text = normalizePunctuation((row.text || row["問題文"] || row.question || row["問題"] || row["設問"] || "").trim());
+      if (!text) continue;
+      const category = (row.category || row["カテゴリ"] || "未分類").trim() || "未分類";
+      const year = (row.year_no || row.year || row["年度"] || row["年"] || "").trim();
+      const choices = [1, 2, 3, 4, 5, 6]
+        .map((i) => normalizePunctuation((row[`choice${i}`] || "").trim()))
+        .filter((c) => c.length > 0);
+      const explanation = normalizePunctuation((row.explanation || row["解説"] || "").trim());
+      const multiFlagRaw = String(row.multi || row["複数"] || row["複数選択"] || "").trim();
+      const isMultiFlag = multiFlagRaw === "1" || multiFlagRaw === "true" || multiFlagRaw === "○" || multiFlagRaw === "はい";
+      const correctRaw = String(row.correct || row["正解"] || row["解答"] || row.answer || "").trim();
+      const importId = (row.id || "").trim();
+      const correctCount = parseInt(row.correct_count, 10) || 0;
+      const wrongCount = parseInt(row.wrong_count, 10) || 0;
+
+      if (choices.length >= 2) {
+        const indices = parseAnswerTokens(correctRaw, choices);
+        const multi = isMultiFlag || indices.length > 1;
+        const correctIndex = !multi && indices.length === 1 ? indices[0] : null;
+        const correctIndices = multi ? indices : [];
+        questions.push({ category, year, text, type: "choice", choices, multi, correctIndex, correctIndices, explanation, _importId: importId, _correctCount: correctCount, _wrongCount: wrongCount });
+      } else if (correctRaw) {
+        questions.push({ category, year, text, type: "text", correctText: normalizePunctuation(correctRaw), explanation, _importId: importId, _correctCount: correctCount, _wrongCount: wrongCount });
+      }
+    }
+    if (questions.length === 0) {
+      setError("問題を読み取れませんでした。列名(category, text, choice1〜, multi, correct, explanation)を確認してください。");
+      return;
+    }
+    setParsed(questions);
+  }
+
+  if (parsed) {
+    const unsetCount = parsed.filter((q) => !isAnswerable(q)).length;
+    return (
+      <div className="stack">
+        <div className="section-title">インポート内容の確認</div>
+        <div className="card">
+          <div className="qrow-meta mono">{parsed.length}問を読み込みました{unsetCount > 0 ? `(うち正解未設定 ${unsetCount}問)` : ""}</div>
+        </div>
+        <section className="card">
+          <ul className="qlist">
+            {parsed.slice(0, 8).map((q, i) => (
+              <li key={i} className="qrow">
+                <div className="qrow-main">
+                  <div className="qrow-text">{renderIsotopeText(q.text)}</div>
+                  <div className="qrow-meta mono muted">{q.category}{q.year ? ` ♯${q.year}` : ""}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {parsed.length > 8 && <div className="qrow-meta mono muted">他 {parsed.length - 8}問…</div>}
+        </section>
+        <div className="form-actions">
+          <button className="btn btn-ghost" onClick={() => setParsed(null)}>戻る</button>
+          <button
+            className="btn btn-primary"
+            onClick={async () => {
+              const result = await onImport(parsed);
+              if (result && (result.updated > 0 || result.added > 0)) {
+                const parts = [];
+                if (result.added > 0) parts.push(`${result.added}問を新規追加`);
+                if (result.updated > 0) parts.push(`${result.updated}問を更新(正答率は保持)`);
+                alert(parts.join("、") + "しました。");
+              }
+            }}
+          >
+            この内容を登録する
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stack">
+      <div className="row-between">
+        <div className="section-title">CSVをインポート</div>
+        <button className="iconbtn" onClick={onCancel}><X size={18} /></button>
+      </div>
+      <div className="card form-card">
+        <div className="qrow-meta muted" style={{ lineHeight: 1.6 }}>
+          列: category, text(またはquestion), choice1〜choice6, correct(正解), year_no(問題番号や年度。例:R5、R3_01), explanation, multi(複数選択なら1)<br />
+          year_no列の値(例:R3_01)は問題一覧ではそのまま表示され、演習の年度絞り込みでは区切り(_ や -)より前の部分(例:R3)でグループ化されます。<br />
+          correct列は「3」「①」「1,4」「①④」のような書き方に対応しています(選択肢の文章そのものでも可)。複数の正解が入っていれば自動的に複数選択の問題として扱われます。<br />
+          正解が空の問題は「正解未設定」として登録され、あとで問題管理から設定できます。
+        </div>
+        <button className="btn btn-ghost" onClick={() => fileRef.current?.click()}>
+          <Upload size={15} /> CSVファイルを選択
+        </button>
+        <input ref={fileRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={handleFile} />
+        <textarea
+          className="textarea"
+          rows={8}
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          placeholder="またはCSVの内容をここに貼り付け"
+        />
+        {error && <div className="error-text">{error}</div>}
+        <div className="form-actions">
+          <button className="btn btn-ghost" onClick={onCancel}>キャンセル</button>
+          <button className="btn btn-primary" onClick={runParse}>読み込む</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Question form ----------
+function QuestionForm({ categories, years, existing, onCancel, onSave }) {
+  const [category, setCategory] = useState(existing?.category || "");
+  const [year, setYear] = useState(existing?.year || "");
+  const [text, setText] = useState(existing?.text || "");
+  const [type, setType] = useState(existing?.type || "choice");
+  const [choices, setChoices] = useState(existing?.choices || ["", ""]);
+  const [multi, setMulti] = useState(existing?.multi || false);
+  const [correctIndex, setCorrectIndex] = useState(existing?.correctIndex ?? null);
+  const [correctIndices, setCorrectIndices] = useState(existing?.correctIndices || []);
+  const [correctText, setCorrectText] = useState(existing?.correctText || "");
+  const [explanation, setExplanation] = useState(existing?.explanation || "");
+  const [image, setImage] = useState(existing?.image || "");
+  const [error, setError] = useState("");
+
+  function handleImageFile(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 1_500_000) {
+      setError("画像サイズが大きすぎます(1.5MB以下にしてください)");
+      return;
+    }
+    setError("");
+    const reader = new FileReader();
+    reader.onload = (ev) => setImage(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function updateChoice(i, v) {
+    const next = [...choices];
+    next[i] = v;
+    setChoices(next);
+  }
+  function addChoice() {
+    if (choices.length >= 6) return;
+    setChoices([...choices, ""]);
+  }
+  function removeChoice(i) {
+    if (choices.length <= 2) return;
+    const next = choices.filter((_, idx) => idx !== i);
+    setChoices(next);
+    if (correctIndex !== null && correctIndex >= next.length) setCorrectIndex(0);
+    setCorrectIndices((prev) => prev.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
+  }
+
+  function toggleMultiCorrect(i) {
+    setCorrectIndices((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
+  }
+
+  function handleSave() {
+    if (!text.trim()) { setError("問題文を入力してください"); return; }
+    const yearVal = year.trim();
+    const cleanText = normalizePunctuation(text.trim());
+    const cleanChoices = choices.map((c) => normalizePunctuation(c.trim()));
+    const cleanExplanation = normalizePunctuation(explanation.trim());
+    if (type === "choice") {
+      if (cleanChoices.some((c) => !c)) { setError("すべての選択肢を入力してください"); return; }
+      if (multi) {
+        onSave({ category: category.trim() || "未分類", year: yearVal, text: cleanText, type, choices: cleanChoices, multi: true, correctIndex: null, correctIndices, explanation: cleanExplanation, image });
+      } else {
+        onSave({ category: category.trim() || "未分類", year: yearVal, text: cleanText, type, choices: cleanChoices, multi: false, correctIndex, correctIndices: [], explanation: cleanExplanation, image });
+      }
+    } else {
+      onSave({ category: category.trim() || "未分類", year: yearVal, text: cleanText, type, correctText: normalizePunctuation(correctText.trim()), explanation: cleanExplanation, image });
+    }
+  }
+
+  return (
+    <div className="stack">
+      <div className="row-between">
+        <div className="section-title">{existing ? "問題を編集" : "問題を追加"}</div>
+        <button className="iconbtn" onClick={onCancel}><X size={18} /></button>
+      </div>
+
+      <div className="card form-card">
+        <label className="field">
+          <span className="field-label">分野・カテゴリ</span>
+          <input className="input" list="cat-suggestions" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="例）法令科目" />
+          <datalist id="cat-suggestions">
+            {categories.map((c) => <option key={c} value={c} />)}
+          </datalist>
+        </label>
+
+        <label className="field">
+          <span className="field-label">年度(任意)</span>
+          <input className="input" list="year-suggestions" value={year} onChange={(e) => setYear(e.target.value)} placeholder="例）R5" />
+          <datalist id="year-suggestions">
+            {(years || []).map((y) => <option key={y} value={y} />)}
+          </datalist>
+        </label>
+
+        <label className="field">
+          <span className="field-label">問題文</span>
+          <textarea className="textarea" rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="問題文を入力" />
+        </label>
+
+        <div className="field">
+          <span className="field-label">画像・グラフ(任意)</span>
+          {image ? (
+            <div className="image-preview-wrap">
+              <img src={image} alt="" className="image-preview" />
+              <button className="btn btn-ghost btn-small" onClick={() => setImage("")}><X size={14} /> 画像を削除</button>
+            </div>
+          ) : (
+            <label className="btn btn-ghost btn-small" style={{ width: "fit-content", cursor: "pointer" }}>
+              <Upload size={14} /> 画像を選択
+              <input type="file" accept="image/*" onChange={handleImageFile} style={{ display: "none" }} />
+            </label>
+          )}
+        </div>
+
+        <div className="field">
+          <span className="field-label">形式</span>
+          <div className="segmented">
+            <button className={"seg" + (type === "choice" ? " seg-active" : "")} onClick={() => setType("choice")}>選択式</button>
+            <button className={"seg" + (type === "text" ? " seg-active" : "")} onClick={() => setType("text")}>記述式</button>
+          </div>
+        </div>
+
+        {type === "choice" ? (
+          <div className="field">
+            <label className="checkbox-row">
+              <input type="checkbox" checked={multi} onChange={(e) => { setMulti(e.target.checked); setCorrectIndex(null); setCorrectIndices([]); }} />
+              <span>複数選択の問題(答えが2つ以上)</span>
+            </label>
+            <span className="field-label">選択肢（{multi ? "正解をすべて選択" : "正解を選択"}）</span>
+            <div className="choices-edit">
+              {choices.map((c, i) => {
+                const active = multi ? correctIndices.includes(i) : correctIndex === i;
+                return (
+                  <div key={i} className="choice-edit-row">
+                    <button
+                      className={"radio" + (active ? " radio-active" : "") + (multi ? " radio-square" : "")}
+                      onClick={() => (multi ? toggleMultiCorrect(i) : setCorrectIndex(i))}
+                      aria-label="正解にする"
+                    />
+                    <input className="input" value={c} onChange={(e) => updateChoice(i, e.target.value)} placeholder={`選択肢 ${i + 1}`} />
+                    {choices.length > 2 && (
+                      <button className="iconbtn" onClick={() => removeChoice(i)}><X size={14} /></button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {choices.length < 6 && (
+              <button className="btn btn-ghost btn-small" onClick={addChoice}><Plus size={14} /> 選択肢を追加</button>
+            )}
+          </div>
+        ) : (
+          <label className="field">
+            <span className="field-label">正解</span>
+            <input className="input" value={correctText} onChange={(e) => setCorrectText(e.target.value)} placeholder="正解の文字列（完全一致で採点）" />
+          </label>
+        )}
+
+        <label className="field">
+          <span className="field-label">解説（任意）</span>
+          <textarea className="textarea" rows={2} value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="正解の理由や補足" />
+        </label>
+
+        {error && <div className="error-text">{error}</div>}
+
+        <div className="form-actions">
+          <button className="btn btn-ghost" onClick={onCancel}>キャンセル</button>
+          <button className="btn btn-primary" onClick={handleSave}>保存する</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Quiz setup ----------
+function QuizSetup({ categories, years, questions, onCancel, onBegin }) {
+  const answerable = useMemo(() => questions.filter(isAnswerable), [questions]);
+  const [category, setCategory] = useState("all");
+  const [year, setYear] = useState("all");
+  const filteredForCount = answerable.filter(
+    (q) => (category === "all" || (q.category || "未分類") === category) && (year === "all" || normalizeYear(q.year || "") === year)
+  );
+  const availableCount = filteredForCount.length;
+  const [count, setCount] = useState(Math.min(10, availableCount || 10));
+  const [weakFirst, setWeakFirst] = useState(false);
+
+  useEffect(() => {
+    setCount(Math.min(Math.max(count, 1), Math.max(availableCount, 1)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, year]);
+
+  if (questions.length === 0) {
+    return (
+      <div className="card empty-card">
+        <div className="empty-title">問題が登録されていません</div>
+        <div className="empty-body">先に「問題管理」から問題を追加してください。</div>
+        <button className="btn btn-primary" onClick={onCancel}>戻る</button>
+      </div>
+    );
+  }
+
+  if (answerable.length === 0) {
+    return (
+      <div className="card empty-card">
+        <div className="empty-title">正解が設定された問題がありません</div>
+        <div className="empty-body">「問題管理」で各問題の正解を設定すると演習できます。</div>
+        <button className="btn btn-primary" onClick={onCancel}>戻る</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stack">
+      <div className="section-title">演習の設定</div>
+      {answerable.length < questions.length && (
+        <div className="notice-banner">
+          <AlertCircle size={15} />
+          正解未設定の問題 {questions.length - answerable.length} 問は出題対象から除外されます。
+        </div>
+      )}
+      <div className="card form-card">
+        <label className="field">
+          <span className="field-label">分野</span>
+          <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="all">すべて（{answerable.length}問）</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}（{answerable.filter((q) => (q.category || "未分類") === c).length}問）</option>
+            ))}
+          </select>
+        </label>
+
+        {years && years.length > 0 && (
+          <label className="field">
+            <span className="field-label">年度</span>
+            <select className="input" value={year} onChange={(e) => setYear(e.target.value)}>
+              <option value="all">すべての年度</option>
+              {years.map((y) => (
+                <option key={y} value={y}>{y}（{answerable.filter((q) => normalizeYear(q.year || "") === y).length}問）</option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className="field">
+          <span className="field-label">出題数（最大 {availableCount}問）</span>
+          <input
+            className="input"
+            type="number"
+            min={1}
+            max={availableCount}
+            value={count}
+            onChange={(e) => setCount(Math.max(1, Math.min(availableCount, Number(e.target.value) || 1)))}
+          />
+        </label>
+
+        <label className="checkbox-row">
+          <input type="checkbox" checked={weakFirst} onChange={(e) => setWeakFirst(e.target.checked)} />
+          <span>苦手な問題（正答率の低い問題）を優先して出題する</span>
+        </label>
+
+        <div className="form-actions">
+          <button className="btn btn-ghost" onClick={onCancel}>戻る</button>
+          <button className="btn btn-primary" onClick={() => onBegin({ category, year, count, weakFirst })}>開始する</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Quiz ----------
+function Quiz({ q, idx, total, answered, lastResult, selectedChoice, setSelectedChoice, selectedChoices, setSelectedChoices, textAnswer, setTextAnswer, onSubmit, onNext }) {
+  const inputRef = useRef(null);
+  useEffect(() => { if (q.type === "text" && inputRef.current) inputRef.current.focus(); }, [idx]);
+
+  function toggleChoice(i) {
+    setSelectedChoices((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
+  }
+
+  return (
+    <div className="stack">
+      <div className="quiz-progress">
+        <div className="quiz-progress-track">
+          <div className="quiz-progress-fill" style={{ width: `${((idx) / total) * 100}%` }} />
+        </div>
+        <div className="mono muted quiz-progress-label">問 {idx + 1} / {total}</div>
+      </div>
+
+      <div className="card quiz-card">
+        <div className="quiz-cat mono muted">{q.category}{q.year ? ` ♯${q.year}` : ""}</div>
+        <div className="quiz-qnum">問{idx + 1}</div>
+        <div className="quiz-text">{renderIsotopeText(q.text)}</div>
+        {q.image && <img src={q.image} alt="" className="quiz-image" />}
+
+        {q.type === "choice" && q.multi && <div className="qrow-meta mono muted" style={{ marginBottom: 8 }}>複数選択(該当するものをすべて選ぶ)</div>}
+        {q.type === "choice" ? (
+          <div className="choices-list">
+            {q.choices.map((c, i) => {
+              let cls = "choice-btn";
+              if (q.multi) {
+                if (answered) {
+                  if (q.correctIndices.includes(i)) cls += " choice-correct";
+                  else if (selectedChoices.includes(i)) cls += " choice-wrong";
+                } else if (selectedChoices.includes(i)) {
+                  cls += " choice-selected";
+                }
+                return (
+                  <button key={i} className={cls} disabled={answered} onClick={() => toggleChoice(i)}>
+                    {renderIsotopeText(c)}
+                  </button>
+                );
+              }
+              if (answered) {
+                if (i === q.correctIndex) cls += " choice-correct";
+                else if (i === selectedChoice) cls += " choice-wrong";
+              } else if (selectedChoice === i) {
+                cls += " choice-selected";
+              }
+              return (
+                <button key={i} className={cls} disabled={answered} onClick={() => setSelectedChoice(i)}>
+                  {renderIsotopeText(c)}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <input
+            ref={inputRef}
+            className="input"
+            value={textAnswer}
+            disabled={answered}
+            onChange={(e) => setTextAnswer(e.target.value)}
+            placeholder="答えを入力"
+            onKeyDown={(e) => { if (e.key === "Enter" && !answered) onSubmit(); }}
+          />
+        )}
+
+        {answered && (
+          <div className={"result-banner " + (lastResult === "correct" ? "result-correct" : "result-wrong")}>
+            {lastResult === "correct" ? "正解" : (
+              <>
+                不正解
+                {q.type === "text" && `（正解: ${q.correctText}）`}
+                {q.type === "choice" && q.multi && `（正解: ${q.correctIndices.map((i) => q.choices[i]).join("、")}）`}
+              </>
+            )}
+            {q.explanation && <div className="result-explain">{renderIsotopeText(q.explanation)}</div>}
+          </div>
+        )}
+
+        <Hanko result={lastResult} show={answered} />
+      </div>
+
+      <div className="quiz-actions">
+        {!answered ? (
+          <button
+            className="btn btn-primary btn-wide"
+            disabled={
+              q.type === "choice"
+                ? (q.multi ? selectedChoices.length === 0 : selectedChoice === null)
+                : textAnswer.trim() === ""
+            }
+            onClick={onSubmit}
+          >
+            解答する
+          </button>
+        ) : (
+          <button className="btn btn-primary btn-wide" onClick={onNext}>
+            {idx + 1 >= total ? "結果を見る" : "次の問題へ"} <ChevronRight size={16} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Result ----------
+function Result({ answers, questions, onHome, onRetryWrong }) {
+  const correct = answers.filter((a) => a.correct).length;
+  const total = answers.length;
+  const rate = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const wrongList = answers.filter((a) => !a.correct).map((a) => questions.find((q) => q.id === a.id)).filter(Boolean);
+
+  const byCategory = {};
+  answers.forEach((a) => {
+    const q = questions.find((qq) => qq.id === a.id);
+    const cat = (q && q.category) || "未分類";
+    byCategory[cat] = byCategory[cat] || { correct: 0, total: 0 };
+    byCategory[cat].total += 1;
+    if (a.correct) byCategory[cat].correct += 1;
+  });
+  const catRows = Object.entries(byCategory).map(([cat, s]) => ({
+    cat,
+    rate: Math.round((s.correct / s.total) * 100),
+    correct: s.correct,
+    total: s.total,
+  }));
+
+  return (
+    <div className="stack">
+      <div className="card hero-card">
+        <div className="hero-label">結果</div>
+        <div className="hero-number">{rate}%</div>
+        <div className="hero-sub">{total}問中 {correct}問正解</div>
+      </div>
+
+      {catRows.length > 1 && (
+        <section className="card">
+          <div className="section-title">分野別の結果</div>
+          <div className="cat-list">
+            {catRows.map((cs) => (
+              <div key={cs.cat} className="cat-row">
+                <div className="cat-name">{cs.cat}</div>
+                <div className="cat-bar-track">
+                  <div className="cat-bar-fill" style={{ width: `${cs.rate}%` }} />
+                </div>
+                <div className="cat-rate mono">{cs.rate}%</div>
+                <div className="cat-count mono">{cs.correct}/{cs.total}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {wrongList.length > 0 && (
+        <section className="card">
+          <div className="section-subtitle">間違えた問題</div>
+          <ul className="qlist">
+            {wrongList.map((q) => (
+              <li key={q.id} className="qrow">
+                <div className="qrow-main">
+                  <div className="qrow-text">{renderIsotopeText(q.text)}</div>
+                  <div className="qrow-meta mono muted">
+                    正解: {q.type === "text"
+                      ? q.correctText
+                      : q.multi
+                        ? q.correctIndices.map((i) => q.choices[i]).join("、")
+                        : q.choices[q.correctIndex]}
+                  </div>
+                  {q.explanation && <div className="qrow-explain">{renderIsotopeText(q.explanation)}</div>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="form-actions">
+        <button className="btn btn-ghost" onClick={onHome}>ホームへ</button>
+        {wrongList.length > 0 && (
+          <button className="btn btn-primary" onClick={onRetryWrong}>間違えた問題だけ復習する</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- global style ----------
+function GlobalStyle() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+      * { box-sizing: border-box; }
+
+      .app-root {
+        width: 100%;
+        min-height: 100vh;
+        background: #0A1016;
+        font-family: 'Zen Kaku Gothic New', sans-serif;
+        color: #DCE6EC;
+        display: flex;
+        justify-content: center;
+      }
+      .center-screen { align-items: center; }
+
+      .paper {
+        width: 100%;
+        max-width: 480px;
+        min-height: 100vh;
+        background: #0D141C;
+        border-left: 1px solid #202D38;
+        border-right: 1px solid #202D38;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .topbar {
+        padding: calc(18px + env(safe-area-inset-top)) 20px 14px;
+        border-bottom: 1px solid #202D38;
+        background: rgba(10, 16, 22, 0.4);
+      }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand-mark {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 20px;
+        font-weight: 700;
+        width: 40px; height: 40px;
+        border: 1.5px solid #4FA8C9;
+        color: #4FA8C9;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 0 12px rgba(79, 168, 201, 0.18);
+      }
+      .brand-title { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; letter-spacing: 0.06em; color: #E7EEF2; }
+      .brand-sub { font-size: 11px; color: #6E8494; margin-top: 1px; }
+
+      .main { flex: 1; padding: 18px 16px 90px; }
+
+      .stack { display: flex; flex-direction: column; gap: 16px; }
+
+      .card {
+        background: #131C25;
+        border: 1px solid #202D38;
+        border-radius: 10px;
+        padding: 18px;
+      }
+
+      .hero-card { text-align: center; }
+      .hero-label { font-size: 12px; color: #6E8494; letter-spacing: 0.08em; }
+      .hero-number { font-family: 'JetBrains Mono', monospace; font-size: 44px; font-weight: 700; color: #4FA8C9; margin: 4px 0; text-shadow: 0 0 18px rgba(79, 168, 201, 0.25); }
+      .hero-sub { font-size: 12px; color: #6E8494; margin-bottom: 14px; }
+
+      .section-title { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; color: #E7EEF2; }
+      .section-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #E7EEF2; }
+      .row-between { display: flex; align-items: center; justify-content: space-between; }
+
+      .mono { font-family: 'JetBrains Mono', monospace; }
+      .muted { color: #7C8E9C; }
+
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        border-radius: 7px;
+        padding: 11px 18px;
+        font-family: 'Zen Kaku Gothic New', sans-serif;
+        font-size: 14px; font-weight: 700;
+        border: 1.5px solid transparent;
+        cursor: pointer;
+      }
+      .btn-primary { background: #2E7C9C; color: #F4FAFD; }
+      .btn-primary:disabled { background: #2A3540; color: #5C6B77; cursor: not-allowed; }
+      .btn-ghost { background: transparent; color: #DCE6EC; border-color: #2C3A46; }
+      .btn-small { padding: 7px 12px; font-size: 13px; }
+      .btn-wide { width: 100%; }
+
+      .empty-hint { text-align: center; font-size: 11px; color: #5C6B77; }
+      .empty-card { text-align: center; }
+      .empty-title { font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-bottom: 6px; color: #E7EEF2; }
+      .empty-body { font-size: 13px; color: #7C8E9C; margin-bottom: 14px; }
+
+      .cat-list { display: flex; flex-direction: column; gap: 10px; }
+      .cat-row { display: grid; grid-template-columns: 78px 1fr 40px 44px; align-items: center; gap: 8px; }
+      .cat-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #C4D1DA; }
+      .cat-bar-track { height: 6px; background: #1C2731; border-radius: 4px; overflow: hidden; }
+      .cat-bar-fill { height: 100%; background: #4FA8C9; }
+      .cat-rate { font-size: 12px; text-align: right; color: #C4D1DA; }
+      .cat-count { font-size: 11px; color: #5C6B77; text-align: right; }
+
+      .qlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+      .qrow { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid #1B2530; }
+      .qrow:last-child { border-bottom: none; padding-bottom: 0; }
+      .qrow-col { flex-direction: column; align-items: stretch; gap: 8px; }
+      .qrow-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .qrow-main { flex: 1; min-width: 0; }
+      .qrow-text { font-size: 13.5px; line-height: 1.5; color: #DCE6EC; }
+      .qrow-meta { font-size: 11px; margin-top: 3px; color: #7C8E9C; }
+      .qrow-explain { font-size: 12px; color: #7C8E9C; margin-top: 4px; }
+      .qrow-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+      .iconbtn { background: transparent; border: 1px solid #2C3A46; border-radius: 6px; padding: 6px; display: flex; cursor: pointer; color: #9AACB8; }
+      .iconbtn-danger { background: #C2564C; border-color: #C2564C; color: #fff; }
+
+      .form-card { display: flex; flex-direction: column; gap: 14px; }
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      .field-label { font-size: 12px; font-weight: 700; color: #9AACB8; }
+      .input, .textarea, select.input {
+        width: 100%; border: 1.5px solid #2C3A46; border-radius: 7px; padding: 10px 12px;
+        font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 14px; background: #0F171F; color: #E7EEF2;
+      }
+      .input:focus, .textarea:focus { outline: none; border-color: #4FA8C9; }
+      .textarea { resize: vertical; }
+
+      .segmented { display: flex; border: 1.5px solid #2C3A46; border-radius: 7px; overflow: hidden; }
+      .seg { flex: 1; padding: 9px; background: #0F171F; border: none; font-size: 13px; font-weight: 700; color: #7C8E9C; cursor: pointer; }
+      .seg-active { background: #2E7C9C; color: #F4FAFD; }
+
+      .choices-edit { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+      .image-preview-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+      .image-preview { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid #2C3A46; }
+      .quiz-image { max-width: 100%; border-radius: 8px; border: 1px solid #2C3A46; margin-bottom: 14px; display: block; }
+      .choice-edit-row { display: flex; align-items: center; gap: 8px; }
+      .radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #3A4956; background: transparent; flex-shrink: 0; cursor: pointer; }
+      .radio-active { border-color: #4FA8C9; background: #4FA8C9; }
+      .radio-square { border-radius: 4px; }
+
+      .notice-banner {
+        display: flex; align-items: flex-start; gap: 8px;
+        background: rgba(217, 165, 78, 0.1); border: 1px solid rgba(217, 165, 78, 0.4); color: #E3B768;
+        border-radius: 8px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5;
+      }
+      .storage-warning {
+        display: flex; align-items: flex-start; gap: 8px;
+        background: rgba(224, 102, 92, 0.12); border-bottom: 1px solid rgba(224, 102, 92, 0.35); color: #E88178;
+        padding: 10px 16px; font-size: 12px; line-height: 1.5;
+      }
+      .badge-unset { color: #E3B768; font-weight: 700; }
+      .quickpick { display: flex; flex-direction: column; gap: 10px; padding: 10px; background: #0F171F; border: 1px dashed #2C3A46; border-radius: 8px; }
+
+      .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9AACB8; }
+
+      .error-text { font-size: 12px; color: #E0665C; }
+      .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+      .quiz-progress { display: flex; align-items: center; gap: 10px; }
+      .quiz-progress-track { flex: 1; height: 5px; background: #1C2731; border-radius: 4px; overflow: hidden; }
+      .quiz-progress-fill { height: 100%; background: #4FA8C9; transition: width 0.3s ease; }
+      .quiz-progress-label { font-size: 11px; flex-shrink: 0; color: #7C8E9C; }
+
+      .quiz-card { position: relative; overflow: hidden; }
+      .quiz-cat { font-size: 11px; margin-bottom: 6px; color: #7C8E9C; }
+      .quiz-qnum { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #4FA8C9; }
+      .quiz-text { font-size: 16px; line-height: 1.6; margin: 6px 0 16px; color: #E7EEF2; }
+      .isotope-sup { font-size: 0.62em; vertical-align: top; position: relative; top: -0.1em; margin-right: 0.5px; }
+
+      .choices-list { display: flex; flex-direction: column; gap: 9px; }
+      .choice-btn {
+        text-align: left; padding: 12px 14px; border-radius: 8px; border: 1.5px solid #2C3A46;
+        background: #0F171F; font-size: 14px; font-family: 'Zen Kaku Gothic New', sans-serif; cursor: pointer; color: #DCE6EC;
+      }
+      .choice-selected { border-color: #4FA8C9; background: rgba(79, 168, 201, 0.12); }
+      .choice-correct { border-color: #4FAE8A; background: rgba(79, 174, 138, 0.12); color: #6FC7A5; font-weight: 700; }
+      .choice-wrong { border-color: #E0665C; background: rgba(224, 102, 92, 0.12); color: #E88178; font-weight: 700; }
+      .choice-btn:disabled { cursor: default; }
+
+      .result-banner { margin-top: 14px; padding: 10px 12px; border-radius: 7px; font-size: 13px; font-weight: 700; }
+      .result-correct { background: rgba(79, 174, 138, 0.12); color: #6FC7A5; }
+      .result-wrong { background: rgba(224, 102, 92, 0.12); color: #E88178; }
+      .result-explain { font-weight: 400; font-size: 12.5px; color: #9AACB8; margin-top: 4px; }
+
+      .hanko-wrap { position: absolute; top: 12px; right: 14px; animation: stampdown 0.35s ease-out; }
+      .hanko-stamp { transform: rotate(-14deg); }
+      @keyframes stampdown {
+        0% { transform: scale(2.2) rotate(-14deg); opacity: 0; }
+        60% { transform: scale(0.92) rotate(-14deg); opacity: 1; }
+        100% { transform: scale(1) rotate(-14deg); opacity: 1; }
+      }
+      .pencil-x { animation: xmark 0.3s ease-out; }
+      @keyframes xmark { 0% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+      .quiz-actions { position: sticky; bottom: 0; }
+
+      .bottomnav {
+        position: sticky; bottom: 0;
+        display: flex;
+        background: #0D141C;
+        border-top: 1px solid #202D38;
+        max-width: 480px;
+        width: 100%;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .navbtn {
+        flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+        padding: 10px 0 12px; background: transparent; border: none; cursor: pointer;
+        color: #5C6B77; font-size: 10.5px; font-family: 'Zen Kaku Gothic New', sans-serif;
+      }
+      .navbtn-active { color: #4FA8C9; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hanko-wrap, .pencil-x { animation: none; }
+      }
+
+      .animate-spin { animation: spin 1s linear infinite; }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    `}</style>
+  );
+}
+
+
+// ---------- mount ----------
+const rootEl = document.getElementById("root");
+try {
+  const root = ReactDOM.createRoot(rootEl);
+  root.render(<App />);
+} catch (e) {
+  rootEl.innerHTML =
+    '<div style="color:#E88178;background:#0A1016;padding:20px;font-family:monospace;white-space:pre-wrap;">起動時にエラーが発生しました:\n' +
+    (e && e.message ? e.message : String(e)) +
+    '</div>';
+}
+window.addEventListener("error", function (e) {
+  if (rootEl && !rootEl.textContent) {
+    rootEl.innerHTML =
+      '<div style="color:#E88178;background:#0A1016;padding:20px;font-family:monospace;white-space:pre-wrap;">読み込みエラー:\n' +
+      (e && e.message ? e.message : "unknown error") +
+      '</div>';
+  }
+});
+
+
+</script>
+<script>
+(function () {
+  var rootEl = document.getElementById("root");
+  function showError(title, err) {
+    var msg = (err && err.message) ? err.message + (err.stack ? '\n\n' + err.stack : '') : (String(err));
+    rootEl.innerHTML =
+      '<div style="color:#E88178;background:#0A1016;padding:20px;font-family:monospace;white-space:pre-wrap;font-size:13px;line-height:1.5;">' +
+      title + ':\n\n' + msg.replace(/</g, '&lt;') + '</div>';
+  }
+  try {
+    if (window.__cdnErrors && window.__cdnErrors.length > 0) {
+      throw new Error("外部ライブラリの読み込みに失敗しました: " + window.__cdnErrors.join(", "));
+    }
+    if (typeof React === "undefined") throw new Error("React が読み込まれていません（CDNブロックの可能性）");
+    if (typeof ReactDOM === "undefined") throw new Error("ReactDOM が読み込まれていません（CDNブロックの可能性）");
+    if (typeof Babel === "undefined") throw new Error("Babel が読み込まれていません（CDNブロックの可能性）");
+    if (typeof Papa === "undefined") throw new Error("PapaParse が読み込まれていません（CDNブロックの可能性）");
+    var src = document.getElementById("app-source").textContent;
+    var compiled = Babel.transform(src, { presets: ["react"] }).code;
+    var script = document.createElement("script");
+    script.textContent = compiled;
+    document.body.appendChild(script);
+  } catch (e) {
+    showError("起動に失敗しました", e);
+  }
+})();
+</script>
+</body>
+</html>

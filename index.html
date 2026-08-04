@@ -346,7 +346,7 @@ function Hanko({ result, show }) {
         <div className="hanko-stamp">
           <svg viewBox="0 0 100 100" width="86" height="86">
             <circle cx="50" cy="50" r="44" fill="none" stroke="#4FA8C9" strokeWidth="5" />
-            <text x="50" y="62" textAnchor="middle" fontSize="42" fontFamily="'JetBrains Mono', monospace" fill="#4FA8C9">正</text>
+            <text x="50" y="58" textAnchor="middle" fontSize="24" fontFamily="'JetBrains Mono', monospace" fill="#4FA8C9">正解</text>
           </svg>
         </div>
       </div>
@@ -354,10 +354,12 @@ function Hanko({ result, show }) {
   }
   return (
     <div className="hanko-wrap">
-      <svg viewBox="0 0 100 100" width="72" height="72" className="pencil-x">
-        <line x1="22" y1="22" x2="78" y2="78" stroke="#8A97A6" strokeWidth="6" strokeLinecap="round" />
-        <line x1="78" y1="22" x2="22" y2="78" stroke="#8A97A6" strokeWidth="6" strokeLinecap="round" />
-      </svg>
+      <div className="hanko-stamp pencil-x">
+        <svg viewBox="0 0 100 100" width="86" height="86">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#8A97A6" strokeWidth="5" />
+          <text x="50" y="58" textAnchor="middle" fontSize="20" fontFamily="'JetBrains Mono', monospace" fill="#8A97A6">不正解</text>
+        </svg>
+      </div>
     </div>
   );
 }
@@ -517,9 +519,13 @@ function App() {
   // same category+text when no year_no is set), keeping one copy and summing
   // their correct/wrong stats together.
   async function dedupeQuestions() {
+    // ignore punctuation-style differences (，、．。 and whitespace) so
+    // duplicates created back when text got inconsistently normalized on
+    // import are still recognized as the same question
+    const fold = (s) => (s || "").replace(/[，、．。\s]/g, "");
     const groups = new Map(); // key -> array of questions
     data.questions.forEach((q) => {
-      const key = q.year ? `year:${q.year}` : `sig:${q.category || ""}||${q.text || ""}`;
+      const key = q.year ? `year:${q.year}` : `sig:${fold(q.category)}||${fold(q.text)}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(q);
     });
@@ -1542,7 +1548,6 @@ function Quiz({ q, idx, total, answered, lastResult, selectedChoice, setSelected
         <div className="quiz-text">{renderIsotopeText(q.text)}</div>
         {q.image && <img src={q.image} alt="" className="quiz-image" />}
 
-        {q.type === "choice" && q.multi && <div className="qrow-meta mono muted" style={{ marginBottom: 8 }}>複数選択(該当するものをすべて選ぶ)</div>}
         {q.type === "choice" ? (
           <div className="choices-list">
             {q.choices.map((c, i) => {

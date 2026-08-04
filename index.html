@@ -276,23 +276,32 @@ function isAnswerable(q) {
 
 // Extracts just the year label from values like "R3_01" or "R3-05" -> "R3".
 // Falls back to the original (trimmed) value if no separator is found.
-// Renders text containing isotope notation like "125-I" or "60-Co" with the
-// mass number as a small superscript before the element symbol (125I).
+// Renders text containing:
+//  - isotope notation like "125-I" or "60-Co" -> mass number as a small
+//    superscript before the element symbol (125I)
+//  - underscore-prefixed notation like "V_20Gy" or "D_95%" -> the part after
+//    the underscore as a small subscript (V20Gy, D95%)
 function renderIsotopeText(text) {
   if (!text) return text;
-  const regex = /(\d+)-([A-Za-z]+)/g;
+  const regex = /(\d+)-([A-Za-z]+)|_([A-Za-z0-9%]+)/g;
   const parts = [];
   let lastIndex = 0;
   let match;
   let key = 0;
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
-    parts.push(
-      <React.Fragment key={key++}>
-        <sup className="isotope-sup">{match[1]}</sup>
-        {match[2]}
-      </React.Fragment>
-    );
+    if (match[1] !== undefined) {
+      parts.push(
+        <React.Fragment key={key++}>
+          <sup className="isotope-sup">{match[1]}</sup>
+          {match[2]}
+        </React.Fragment>
+      );
+    } else {
+      parts.push(
+        <sub key={key++} className="isotope-sub">{match[3]}</sub>
+      );
+    }
     lastIndex = match.index + match[0].length;
   }
   if (parts.length === 0) return text;
@@ -1876,6 +1885,7 @@ function GlobalStyle() {
       .quiz-qnum { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #4FA8C9; }
       .quiz-text { font-size: 16px; line-height: 1.6; margin: 6px 0 16px; color: #E7EEF2; }
       .isotope-sup { font-size: 0.62em; vertical-align: top; position: relative; top: -0.1em; margin-right: 0.5px; }
+      .isotope-sub { font-size: 0.62em; vertical-align: sub; position: relative; bottom: -0.1em; margin-left: 0.5px; }
 
       .choices-list { display: flex; flex-direction: column; gap: 9px; }
       .choice-btn {
@@ -1894,13 +1904,14 @@ function GlobalStyle() {
 
       .hanko-wrap { position: absolute; top: 12px; right: 14px; animation: stampdown 0.35s ease-out; }
       .hanko-stamp { transform: rotate(-14deg); }
+      .hanko-stamp.pencil-x { transform: rotate(14deg); }
       @keyframes stampdown {
         0% { transform: scale(2.2) rotate(-14deg); opacity: 0; }
         60% { transform: scale(0.92) rotate(-14deg); opacity: 1; }
         100% { transform: scale(1) rotate(-14deg); opacity: 1; }
       }
       .pencil-x { animation: xmark 0.3s ease-out; }
-      @keyframes xmark { 0% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+      @keyframes xmark { 0% { transform: rotate(14deg) scale(1.6); opacity: 0; } 100% { transform: rotate(14deg) scale(1); opacity: 1; } }
 
       .quiz-actions { position: sticky; bottom: 0; }
 

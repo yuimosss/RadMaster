@@ -496,9 +496,11 @@ function App() {
       if (matchIdx !== undefined) {
         // matches a question already on this device (same year_no, e.g.
         // R3_01) -> update its content, but leave its accumulated
-        // correct/wrong stats untouched.
+        // correct/wrong stats untouched. CSV imports never carry image
+        // data, so keep whatever image was already attached locally.
         const existingId = questions[matchIdx].id;
-        questions[matchIdx] = { ...content, id: existingId };
+        const existingImage = questions[matchIdx].image;
+        questions[matchIdx] = { ...content, id: existingId, image: content.image || existingImage || "" };
         updated += 1;
       } else {
         const id = importId || uid();
@@ -1605,10 +1607,13 @@ function Quiz({ q, idx, total, answered, lastResult, selectedChoice, setSelected
                 不正解
                 {q.type === "text" && `（正解: ${q.correctText}）`}
                 {q.type === "choice" && q.multi && (
-                  <div style={{ marginTop: "6px", paddingTop: "6px", borderTop: "1px solid currentColor", opacity: 0.8 }}>
-                    正解:<br />
-                    {q.correctIndices.map((i) => q.choices[i]).join("\n").split("\n").map((line, idx) => (
-                      <React.Fragment key={idx}>{line}{idx < q.correctIndices.length - 1 && <br />}</React.Fragment>
+                  <div style={{ marginTop: "4px" }}>
+                    {q.correctIndices.map((i, idx) => (
+                      <React.Fragment key={i}>
+                        {idx === 0 ? "正解:" : ""}
+                        {q.choices[i]}
+                        {idx < q.correctIndices.length - 1 && <br />}
+                      </React.Fragment>
                     ))}
                   </div>
                 )}

@@ -283,7 +283,7 @@ function isAnswerable(q) {
 //    the underscore as a small subscript (V20Gy, D95%)
 function renderIsotopeText(text) {
   if (!text) return text;
-  const regex = /(\d+)-([A-Za-z]+)|_([A-Za-z0-9%]+)/g;
+  const regex = /(\d+)-([A-Za-z]+)|_([A-Za-z0-9%,]+)/g;
   const parts = [];
   let lastIndex = 0;
   let match;
@@ -1605,13 +1605,13 @@ function Quiz({ q, idx, total, answered, lastResult, selectedChoice, setSelected
             {lastResult === "correct" ? "正解" : (
               <>
                 不正解
-                {q.type === "text" && `（正解: ${q.correctText}）`}
+                {q.type === "text" && <>（正解: {renderIsotopeText(q.correctText)}）</>}
                 {q.type === "choice" && q.multi && (
                   <div style={{ marginTop: "4px" }}>
                     {q.correctIndices.map((i, idx) => (
                       <React.Fragment key={i}>
                         {idx === 0 ? "正解:" : ""}
-                        {q.choices[i]}
+                        {renderIsotopeText(q.choices[i])}
                         {idx < q.correctIndices.length - 1 && <br />}
                       </React.Fragment>
                     ))}
@@ -1707,10 +1707,15 @@ function Result({ answers, questions, onHome, onRetryWrong }) {
                   <div className="qrow-text">{renderIsotopeText(q.text)}</div>
                   <div className="qrow-meta mono muted" style={{ whiteSpace: "pre-wrap" }}>
                     正解: {q.type === "text"
-                      ? q.correctText
+                      ? renderIsotopeText(q.correctText)
                       : q.multi
-                        ? q.correctIndices.map((i) => q.choices[i]).join("\n")
-                        : q.choices[q.correctIndex]}
+                        ? q.correctIndices.map((i, idx) => (
+                            <React.Fragment key={i}>
+                              {renderIsotopeText(q.choices[i])}
+                              {idx < q.correctIndices.length - 1 && <br />}
+                            </React.Fragment>
+                          ))
+                        : renderIsotopeText(q.choices[q.correctIndex])}
                   </div>
                   {q.explanation && <div className="qrow-explain">{renderIsotopeText(q.explanation)}</div>}
                 </div>
@@ -1896,8 +1901,8 @@ function GlobalStyle() {
       .quiz-cat { font-size: 11px; margin-bottom: 6px; color: #7C8E9C; }
       .quiz-qnum { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #4FA8C9; }
       .quiz-text { font-size: 16px; line-height: 1.6; margin: 6px 0 16px; color: #E7EEF2; }
-      .isotope-sup { font-size: 0.62em; vertical-align: top; position: relative; top: -0.1em; margin-right: 0.5px; }
-      .isotope-sub { font-size: 0.62em; vertical-align: sub; position: relative; bottom: -0.1em; margin-left: 0.5px; }
+      .isotope-sup { font-size: 0.62em; line-height: 0; position: relative; top: -0.35em; vertical-align: baseline; margin-right: 0.5px; }
+      .isotope-sub { font-size: 0.62em; line-height: 0; position: relative; top: 0.25em; vertical-align: baseline; margin-left: 0.5px; }
 
       .choices-list { display: flex; flex-direction: column; gap: 9px; }
       .choice-btn {

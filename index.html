@@ -1607,14 +1607,16 @@ function Quiz({ q, idx, total, answered, lastResult, selectedChoice, setSelected
                 不正解
                 {q.type === "text" && <>（正解: {renderIsotopeText(q.correctText)}）</>}
                 {q.type === "choice" && q.multi && (
-                  <div style={{ marginTop: "4px" }}>
-                    {q.correctIndices.map((i, idx) => (
-                      <React.Fragment key={i}>
-                        {idx === 0 ? "正解:" : ""}
-                        {renderIsotopeText(q.choices[i])}
-                        {idx < q.correctIndices.length - 1 && <br />}
-                      </React.Fragment>
-                    ))}
+                  <div style={{ marginTop: "4px", display: "flex" }}>
+                    <span style={{ flexShrink: 0 }}>正解：</span>
+                    <span>
+                      {q.correctIndices.map((i, idx) => (
+                        <React.Fragment key={i}>
+                          {renderIsotopeText(q.choices[i])}
+                          {idx < q.correctIndices.length - 1 && <br />}
+                        </React.Fragment>
+                      ))}
+                    </span>
                   </div>
                 )}
               </>
@@ -1705,17 +1707,20 @@ function Result({ answers, questions, onHome, onRetryWrong }) {
               <li key={q.id} className="qrow">
                 <div className="qrow-main">
                   <div className="qrow-text">{renderIsotopeText(q.text)}</div>
-                  <div className="qrow-meta mono muted" style={{ whiteSpace: "pre-wrap" }}>
-                    正解: {q.type === "text"
-                      ? renderIsotopeText(q.correctText)
-                      : q.multi
-                        ? q.correctIndices.map((i, idx) => (
-                            <React.Fragment key={i}>
-                              {renderIsotopeText(q.choices[i])}
-                              {idx < q.correctIndices.length - 1 && <br />}
-                            </React.Fragment>
-                          ))
-                        : renderIsotopeText(q.choices[q.correctIndex])}
+                  <div className="qrow-meta mono muted" style={{ whiteSpace: "pre-wrap", display: "flex" }}>
+                    <span style={{ flexShrink: 0 }}>正解：</span>
+                    <span>
+                      {q.type === "text"
+                        ? renderIsotopeText(q.correctText)
+                        : q.multi
+                          ? q.correctIndices.map((i, idx) => (
+                              <React.Fragment key={i}>
+                                {renderIsotopeText(q.choices[i])}
+                                {idx < q.correctIndices.length - 1 && <br />}
+                              </React.Fragment>
+                            ))
+                          : renderIsotopeText(q.choices[q.correctIndex])}
+                    </span>
                   </div>
                   {q.explanation && <div className="qrow-explain">{renderIsotopeText(q.explanation)}</div>}
                 </div>
@@ -1901,8 +1906,8 @@ function GlobalStyle() {
       .quiz-cat { font-size: 11px; margin-bottom: 6px; color: #7C8E9C; }
       .quiz-qnum { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #4FA8C9; }
       .quiz-text { font-size: 16px; line-height: 1.6; margin: 6px 0 16px; color: #E7EEF2; }
-      .isotope-sup { font-size: 0.62em; line-height: 0; position: relative; top: -0.35em; vertical-align: baseline; margin-right: 0.5px; }
-      .isotope-sub { font-size: 0.62em; line-height: 0; position: relative; top: 0.25em; vertical-align: baseline; margin-left: 0.5px; }
+      .isotope-sup { font-size: 0.62em; vertical-align: text-top; }
+      .isotope-sub { font-size: 0.62em; vertical-align: text-bottom; }
 
       .choices-list { display: flex; flex-direction: column; gap: 9px; }
       .choice-btn {

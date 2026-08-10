@@ -905,11 +905,13 @@ function Home({ data, overall, categories, onStartQuiz, onManage, onReviewWrong 
             {catStats.map((cs) => (
               <div key={cs.cat} className="cat-row">
                 <div className="cat-name">{cs.cat}</div>
-                <div className="cat-bar-track">
-                  <div className="cat-bar-fill" style={{ width: `${cs.rate === null ? 0 : cs.rate}%` }} />
+                <div className="cat-meta-row">
+                  <div className="cat-bar-track">
+                    <div className="cat-bar-fill" style={{ width: `${cs.rate === null ? 0 : cs.rate}%` }} />
+                  </div>
+                  <div className="cat-rate mono">{cs.rate === null ? "―" : `${cs.rate}%`}</div>
+                  <div className="cat-count mono">{cs.count}問</div>
                 </div>
-                <div className="cat-rate mono">{cs.rate === null ? "―" : `${cs.rate}%`}</div>
-                <div className="cat-count mono">{cs.count}問</div>
               </div>
             ))}
           </div>
@@ -1834,9 +1836,10 @@ function GlobalStyle() {
       .empty-title { font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-bottom: 6px; color: #E7EEF2; }
       .empty-body { font-size: 13px; color: #7C8E9C; margin-bottom: 14px; }
 
-      .cat-list { display: flex; flex-direction: column; gap: 10px; }
-      .cat-row { display: grid; grid-template-columns: 78px 1fr 40px 44px; align-items: center; gap: 8px; }
-      .cat-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #C4D1DA; }
+      .cat-list { display: flex; flex-direction: column; gap: 14px; }
+      .cat-row { display: flex; flex-direction: column; gap: 5px; }
+      .cat-name { font-size: 13px; color: #C4D1DA; white-space: normal; overflow-wrap: break-word; line-height: 1.35; }
+      .cat-meta-row { display: grid; grid-template-columns: 1fr 40px 44px; align-items: center; gap: 8px; }
       .cat-bar-track { height: 6px; background: #1C2731; border-radius: 4px; overflow: hidden; }
       .cat-bar-fill { height: 100%; background: #4FA8C9; }
       .cat-rate { font-size: 12px; text-align: right; color: #C4D1DA; }

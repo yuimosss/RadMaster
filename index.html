@@ -474,14 +474,31 @@ function App() {
     delete stats[id];
     await persist({ questions, stats });
   }
+  // A comparable representation of a question's correct-answer key, used to
+  // detect whether an edit actually changed the answer (as opposed to just
+  // the wording, category, image, etc).
+  function answerKeyOf(q) {
+    if (!q) return null;
+    if (q.type === "text") return `text:${(q.correctText || "").trim()}`;
+    if (q.multi) return `multi:${[...(q.correctIndices || [])].sort((a, b) => a - b).join(",")}`;
+    return `single:${q.correctIndex}`;
+  }
+
   async function saveQuestion(q) {
     let questions;
+    const stats = { ...data.stats };
     if (editingId) {
+      const prev = data.questions.find((x) => x.id === editingId);
+      // The correct answer changed -> past correct/wrong counts were graded
+      // against the old answer and no longer reflect accuracy, so reset them.
+      if (prev && answerKeyOf(prev) !== answerKeyOf(q)) {
+        delete stats[editingId];
+      }
       questions = data.questions.map((x) => (x.id === editingId ? { ...q, id: editingId } : x));
     } else {
       questions = [...data.questions, { ...q, id: uid() }];
     }
-    await persist({ ...data, questions });
+    await persist({ ...data, questions, stats });
     setView("manage");
   }
 
@@ -507,10 +524,15 @@ function App() {
       if (matchIdx !== undefined) {
         // matches a question already on this device (same year_no, e.g.
         // R3_01) -> update its content, but leave its accumulated
-        // correct/wrong stats untouched. CSV imports never carry image
-        // data, so keep whatever image was already attached locally.
+        // correct/wrong stats untouched, UNLESS the correct answer itself
+        // changed (those old stats were graded against the old answer and
+        // are no longer meaningful). CSV imports never carry image data, so
+        // keep whatever image was already attached locally.
         const existingId = questions[matchIdx].id;
         const existingImage = questions[matchIdx].image;
+        if (answerKeyOf(questions[matchIdx]) !== answerKeyOf(content)) {
+          delete stats[existingId];
+        }
         questions[matchIdx] = { ...content, id: existingId, image: content.image || existingImage || "" };
         updated += 1;
       } else {
@@ -1543,13 +1565,13 @@ function QuizSetup({ categories, years, questions, onCancel, onBegin, onBeginPas
           className={"mode-tab" + (mode === "normal" ? " mode-tab-active" : "")}
           onClick={() => setMode("normal")}
         >
-          通常演習
+          分野別演習
         </button>
         <button
           className={"mode-tab" + (mode === "pastExam" ? " mode-tab-active" : "")}
           onClick={() => setMode("pastExam")}
         >
-          過去問に挑戦！
+          模擬演習
         </button>
       </div>
 

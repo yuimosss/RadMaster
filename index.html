@@ -314,6 +314,17 @@ function normalizeYear(raw) {
   return raw.split(/[_\-\s]/)[0].trim();
 }
 
+// Extracts the trailing question-number part from a year_no like "R5_01" -> 1.
+// Returns null when there is no parseable number (used to fall back to
+// original order for questions that don't follow the numbered format).
+function questionNoOf(raw) {
+  if (!raw) return null;
+  const parts = raw.split(/[_\-\s]/);
+  if (parts.length < 2) return null;
+  const n = parseInt(parts[1].replace(/[^\d]/g, ""), 10);
+  return Number.isNaN(n) ? null : n;
+}
+
 const CIRCLED_MAP = { "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10 };
 
 // Parses a "correct answer" cell from an imported CSV into 0-based choice indices.
@@ -633,6 +644,40 @@ function App() {
     });
   }
 
+  // 過去問に挑戦: pulls every answerable question for the chosen year and
+  // orders them by the question number in year_no (e.g. R5_01 -> 1, R5_02 ->
+  // 2 ...), instead of shuffling, so the set plays through 1〜60 in order.
+  function beginPastExam({ year }) {
+    let pool = data.questions.filter((q) => normalizeYear(q.year || "") === year && isAnswerable(q));
+    pool = [...pool].sort((a, b) => {
+      const na = questionNoOf(a.year);
+      const nb = questionNoOf(b.year);
+      if (na === null && nb === null) return 0;
+      if (na === null) return 1;
+      if (nb === null) return -1;
+      return na - nb;
+    });
+    setQuizQueue(pool);
+    setQuizIdx(0);
+    setQuizAnswers([]);
+    setSelectedChoice(null);
+    setSelectedChoices([]);
+    setTextAnswer("");
+    setAnswered(false);
+    setLastResult(null);
+    setView("quiz");
+    saveSession({
+      queueIds: pool.map((q) => q.id),
+      idx: 0,
+      answers: [],
+      selectedChoice: null,
+      selectedChoices: [],
+      textAnswer: "",
+      answered: false,
+      lastResult: null,
+    });
+  }
+
   function rateOf(id) {
     const s = data.stats[id];
     if (!s || s.correct + s.wrong === 0) return -1; // unanswered -> prioritize
@@ -810,6 +855,7 @@ function App() {
               questions={data.questions}
               onCancel={() => setView("home")}
               onBegin={beginQuiz}
+              onBeginPastExam={beginPastExam}
             />
           )}
           {view === "quiz" && quizQueue.length > 0 && (
@@ -1442,8 +1488,9 @@ function QuestionForm({ categories, years, existing, onCancel, onSave }) {
 }
 
 // ---------- Quiz setup ----------
-function QuizSetup({ categories, years, questions, onCancel, onBegin }) {
+function QuizSetup({ categories, years, questions, onCancel, onBegin, onBeginPastExam }) {
   const answerable = useMemo(() => questions.filter(isAnswerable), [questions]);
+  const [mode, setMode] = useState("normal");
   const [category, setCategory] = useState("all");
   const [year, setYear] = useState("all");
   const filteredForCount = answerable.filter(
@@ -1457,6 +1504,9 @@ function QuizSetup({ categories, years, questions, onCancel, onBegin }) {
     setCount(Math.min(Math.max(count, 1), Math.max(availableCount, 1)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, year]);
+
+  const [pastYear, setPastYear] = useState(years && years.length > 0 ? years[0] : "");
+  const pastCount = pastYear ? answerable.filter((q) => normalizeYear(q.year || "") === pastYear).length : 0;
 
   if (questions.length === 0) {
     return (
@@ -1487,51 +1537,99 @@ function QuizSetup({ categories, years, questions, onCancel, onBegin }) {
           正解未設定の問題 {questions.length - answerable.length} 問は出題対象から除外されます。
         </div>
       )}
-      <div className="card form-card">
-        <label className="field">
-          <span className="field-label">分野</span>
-          <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="all">すべて（{answerable.length}問）</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}（{answerable.filter((q) => (q.category || "未分類") === c).length}問）</option>
-            ))}
-          </select>
-        </label>
 
-        {years && years.length > 0 && (
+      <div className="mode-tabs">
+        <button
+          className={"mode-tab" + (mode === "normal" ? " mode-tab-active" : "")}
+          onClick={() => setMode("normal")}
+        >
+          通常演習
+        </button>
+        <button
+          className={"mode-tab" + (mode === "pastExam" ? " mode-tab-active" : "")}
+          onClick={() => setMode("pastExam")}
+        >
+          過去問に挑戦！
+        </button>
+      </div>
+
+      {mode === "normal" ? (
+        <div className="card form-card">
           <label className="field">
-            <span className="field-label">年度</span>
-            <select className="input" value={year} onChange={(e) => setYear(e.target.value)}>
-              <option value="all">すべての年度</option>
-              {years.map((y) => (
-                <option key={y} value={y}>{y}（{answerable.filter((q) => normalizeYear(q.year || "") === y).length}問）</option>
+            <span className="field-label">分野</span>
+            <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="all">すべて（{answerable.length}問）</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}（{answerable.filter((q) => (q.category || "未分類") === c).length}問）</option>
               ))}
             </select>
           </label>
-        )}
 
-        <label className="field">
-          <span className="field-label">出題数（最大 {availableCount}問）</span>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            max={availableCount}
-            value={count}
-            onChange={(e) => setCount(Math.max(1, Math.min(availableCount, Number(e.target.value) || 1)))}
-          />
-        </label>
+          {years && years.length > 0 && (
+            <label className="field">
+              <span className="field-label">年度</span>
+              <select className="input" value={year} onChange={(e) => setYear(e.target.value)}>
+                <option value="all">すべての年度</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}（{answerable.filter((q) => normalizeYear(q.year || "") === y).length}問）</option>
+                ))}
+              </select>
+            </label>
+          )}
 
-        <label className="checkbox-row">
-          <input type="checkbox" checked={weakFirst} onChange={(e) => setWeakFirst(e.target.checked)} />
-          <span>苦手な問題（正答率の低い問題）を優先して出題する</span>
-        </label>
+          <label className="field">
+            <span className="field-label">出題数（最大 {availableCount}問）</span>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              max={availableCount}
+              value={count}
+              onChange={(e) => setCount(Math.max(1, Math.min(availableCount, Number(e.target.value) || 1)))}
+            />
+          </label>
 
-        <div className="form-actions">
-          <button className="btn btn-ghost" onClick={onCancel}>戻る</button>
-          <button className="btn btn-primary" onClick={() => onBegin({ category, year, count, weakFirst })}>開始する</button>
+          <label className="checkbox-row">
+            <input type="checkbox" checked={weakFirst} onChange={(e) => setWeakFirst(e.target.checked)} />
+            <span>苦手な問題（正答率の低い問題）を優先して出題する</span>
+          </label>
+
+          <div className="form-actions">
+            <button className="btn btn-ghost" onClick={onCancel}>戻る</button>
+            <button className="btn btn-primary" onClick={() => onBegin({ category, year, count, weakFirst })}>開始する</button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="card form-card">
+          {years && years.length > 0 ? (
+            <>
+              <label className="field">
+                <span className="field-label">年度</span>
+                <select className="input" value={pastYear} onChange={(e) => setPastYear(e.target.value)}>
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}（{answerable.filter((q) => normalizeYear(q.year || "") === y).length}問）</option>
+                  ))}
+                </select>
+              </label>
+              <div className="past-exam-note muted">
+                選んだ年度の問題を、番号順（1〜{pastCount}）に出題します。
+              </div>
+              <div className="form-actions">
+                <button className="btn btn-ghost" onClick={onCancel}>戻る</button>
+                <button
+                  className="btn btn-primary"
+                  disabled={pastCount === 0}
+                  onClick={() => onBeginPastExam({ year: pastYear })}
+                >
+                  挑戦する
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="empty-body">年度（year_no）が設定された問題がありません。「問題管理」で年度を設定してください。</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1860,6 +1958,20 @@ function GlobalStyle() {
       .iconbtn-danger { background: #C2564C; border-color: #C2564C; color: #fff; }
 
       .form-card { display: flex; flex-direction: column; gap: 14px; }
+      .mode-tabs { display: flex; gap: 8px; }
+      .mode-tab {
+        flex: 1;
+        padding: 10px 8px;
+        border-radius: 10px;
+        border: 1px solid #263241;
+        background: #141B23;
+        color: #8A97A3;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .mode-tab-active { background: #1E2A38; border-color: #3D8BFD; color: #E7EDF3; }
+      .past-exam-note { font-size: 12.5px; }
       .field { display: flex; flex-direction: column; gap: 6px; }
       .field-label { font-size: 12px; font-weight: 700; color: #9AACB8; }
       .input, .textarea, select.input {
